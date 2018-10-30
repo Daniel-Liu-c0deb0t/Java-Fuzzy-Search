@@ -40,7 +40,7 @@ public class KMPSearcher{
      * Searches for a String pattern in the String text.
      * @param text String to be searched.
      * @param pattern String to be searched for.
-     * @return A List of ExactMatches that have the indexes of match start locations.
+     * @return A List of ExactMatches that have the indexes of match end locations.
      */
     public List<ExactMatch> search(String text, String pattern){
         return search(text, pattern, preprocessPattern(pattern));
@@ -51,7 +51,7 @@ public class KMPSearcher{
      * @param text String to be searched.
      * @param pattern String to be searched for.
      * @param lsp A preprocessed longest suffix-prefix array for the pattern.
-     * @return A List of ExactMatches that have the indexes of the match start locations.
+     * @return A List of ExactMatches that have the indexes of the match end locations.
      */
     public List<ExactMatch> search(String text, String pattern, int[] lsp){
         int i = 0, j = 0;
@@ -63,7 +63,7 @@ public class KMPSearcher{
                 j++;
             }
             if(j == pattern.length()){
-                matches.add(new ExactMatch(i - j));
+                matches.add(new ExactMatch(i - 1));
                 j = lsp[j - 1];
             }else if(i < text.length() && text.charAt(i) != pattern.charAt(j)){
                 if(j == 0)
