@@ -4,18 +4,22 @@ import javafuzzysearch.searchers.KMPSearcher;
 
 public class KMPTest{
     public static void main(String[] args){
-        KMPSearcher s = new KMPSearcher();
-        System.out.println("[ExactMatch(index = 4)]".equals(
-            String.valueOf(s.search("hello world", "hello"))));
+        Tester t = new Tester("KMP Test");
         
-        System.out.println("[ExactMatch(index = 4), ExactMatch(index = 10)]".equals(
-            String.valueOf(s.search("hello hello", "hello"))));
-
-        System.out.println("[]".equals(
-            String.valueOf(s.search("world world", "hello"))));
+        KMPSearcher s = new KMPSearcher();
+        
+        t.testStrEquals(s.search("hello world", "hello"),
+                        "[ExactMatch(index = 4)]");
+        
+        t.testStrEquals(s.search("hello hello", "hello"),
+                        "[ExactMatch(index = 4), ExactMatch(index = 10)]");
+        
+        t.testStrEquals(s.search("world world", "hello"),
+                        "[]");
         
         int[] lsp = s.preprocessPattern("hello");
-        System.out.println("[ExactMatch(index = 4)]".equals(
-            String.valueOf(s.search("hello world", "hello", lsp))));
+        
+        t.testStrEquals(s.search("hello world", "hello", lsp),
+                        "[ExactMatch(index = 4)]");
     }
 }

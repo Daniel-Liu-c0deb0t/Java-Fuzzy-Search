@@ -45,7 +45,7 @@ public class BitapSearcher{
             return new ArrayList<FuzzyMatch<Integer>>();
         
         int currMinOverlap = Math.min(pattern.length(), minOverlap);
-        text = Utils.repeatChar('#', pattern.length() - currMinOverlap) + text;
+        int maxNonOverlap = pattern.length() - currMinOverlap;
         
         // max edits allowed assuming full overlap between pattern and text
         int fullMaxEdits = (int)(maxEdits < 1.0 ? (maxEdits * pattern.length()) : maxEdits);
@@ -57,24 +57,29 @@ public class BitapSearcher{
             r[i] = new BitVector(pattern.length() + 1).set(0);
         }
         
-        for(int i = 0; i < text.length(); i++){
+        for(int i = 0; i < maxNonOverlap * 2 + text.length(); i++){
             BitVector old = new BitVector(pattern.length() + 1).or(r[0]);
             boolean found = false;
             
             for(int j = 0; j <= fullMaxEdits; j++){
                 if(j == 0){
-                    if(text.charAt(i) != '#')
-                        r[0].and(patternIdx.get(text.charAt(i)));
+                    if(i >= maxNonOverlap && i < maxNonOverlap + text.length())
+                        r[0].and(patternIdx.get(text.charAt(i - maxNonOverlap)));
                 }else{
                     BitVector temp = new BitVector(pattern.length() + 1).or(r[j]);
-                    (text.charAt(i) == '#' ? r[j] : r[j].and(patternIdx.get(text.charAt(i)))).or(old);
+                    
+                    if(i >= maxNonOverlap && i < maxNonOverlap + text.length())
+                        r[j].and(patternIdx.get(text.charAt(i - maxNonOverlap))).or(old);
+                    else
+                        r[j].or(old);
+                    
                     old = temp;
                 }
                 
                 r[j].leftShift().set(0);
                 
                 if(!found && r[j].get(pattern.length())){
-                    int index = i - (pattern.length() - currMinOverlap);
+                    int index = i - maxNonOverlap;
                     int length = Math.min(index + 1, pattern.length());
                     int partialMaxEdits = (int)(maxEdits < 1.0 ? (maxEdits * length) : maxEdits);
                     
