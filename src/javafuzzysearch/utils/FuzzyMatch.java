@@ -1,13 +1,13 @@
 package javafuzzysearch.utils;
 
-public class FuzzyMatch<T>{
+public class FuzzyMatch{
     private int index, length;
-    private T value;
+    private int edits;
 
-    public FuzzyMatch(int index, int length, T value){
+    public FuzzyMatch(int index, int length, int edits){
         this.index = index;
         this.length = length;
-        this.value = value;
+        this.edits = edits;
     }
 
     public int getIndex(){
@@ -18,12 +18,12 @@ public class FuzzyMatch<T>{
         return length;
     }
 
-    public T getValue(){
-        return value;
+    public int getEdits(){
+        return edits;
     }
     
     @Override
     public String toString(){
-        return String.format("FuzzyMatch(index = %d, length = %d, value = %s)", index, length, value);
+        return String.format("FuzzyMatch(index = %d, length = %d, edits = %d)", index, length, edits);
     }
 }

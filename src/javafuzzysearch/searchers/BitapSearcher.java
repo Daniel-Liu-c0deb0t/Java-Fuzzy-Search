@@ -3,6 +3,7 @@ package javafuzzysearch.searchers;
 import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.Utils;
 import javafuzzysearch.utils.BitVector;
+import javafuzzysearch.utils.LengthParam;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -14,10 +15,10 @@ import java.util.Set;
  * Implementation of the Bitap fuzzy matching algorithm for Hamming distance.
  */
 public class BitapSearcher{
-    private double maxEdits;
-    private int minOverlap;
+    private LengthParam maxEdits;
+    private LengthParam minOverlap;
     
-    public BitapSearcher(double maxEdits, int minOverlap){
+    public BitapSearcher(LengthParam maxEdits, LengthParam minOverlap){
         this.maxEdits = maxEdits;
         this.minOverlap = minOverlap;
     }
@@ -36,42 +37,42 @@ public class BitapSearcher{
         return res;
     }
     
-    public List<FuzzyMatch<Integer>> search(String text, String pattern){
+    public List<FuzzyMatch> search(String text, String pattern){
         return search(text, pattern, preprocessPattern(pattern, Utils.uniqueChars(text, pattern)));
     }
     
-    public List<FuzzyMatch<Integer>> search(String text, String pattern, Map<Character, BitVector> patternIdx){
+    public List<FuzzyMatch> search(String text, String pattern, Map<Character, BitVector> patternIdx){
         if(pattern.isEmpty())
-            return new ArrayList<FuzzyMatch<Integer>>();
+            return new ArrayList<FuzzyMatch>();
         
-        int currMinOverlap = Math.min(pattern.length(), minOverlap);
-        int maxNonOverlap = pattern.length() - currMinOverlap;
+        int currMinOverlap = minOverlap.get(pattern.length());
+        int currMaxNonOverlap = pattern.length() - currMinOverlap;
         
         // max edits allowed assuming full overlap between pattern and text
-        int fullMaxEdits = (int)(maxEdits < 1.0 ? (maxEdits * pattern.length()) : maxEdits);
+        int currFullMaxEdits = maxEdits.get(pattern.length());
         
-        BitVector[] r = new BitVector[fullMaxEdits + 1];
-        List<FuzzyMatch<Integer>> matches = new ArrayList<>();
+        BitVector[] r = new BitVector[currFullMaxEdits + 1];
+        List<FuzzyMatch> matches = new ArrayList<>();
         
-        for(int i = 0; i <= fullMaxEdits; i++){
+        for(int i = 0; i <= currFullMaxEdits; i++){
             r[i] = new BitVector(pattern.length() + 1).set(0);
         }
         
-        for(int i = 0; i < maxNonOverlap * 2 + text.length(); i++){
+        for(int i = 0; i < currMaxNonOverlap * 2 + text.length(); i++){
             BitVector old = new BitVector(pattern.length() + 1).or(r[0]);
             boolean found = false;
             
-            for(int j = 0; j <= fullMaxEdits; j++){
+            for(int j = 0; j <= currFullMaxEdits; j++){
                 if(j == 0){
-                    if(i >= maxNonOverlap && i < maxNonOverlap + text.length())
-                        r[0].and(patternIdx.get(text.charAt(i - maxNonOverlap)));
+                    if(i >= currMaxNonOverlap && i < currMaxNonOverlap + text.length())
+                        r[0].and(patternIdx.get(text.charAt(i - currMaxNonOverlap)));
                 }else{
                     BitVector temp = new BitVector(pattern.length() + 1).or(r[j]);
                     
-                    if(i >= maxNonOverlap && i < maxNonOverlap + text.length())
-                        r[j].and(patternIdx.get(text.charAt(i - maxNonOverlap))).or(old);
-                    else
-                        r[j].or(old);
+                    if(i >= currMaxNonOverlap && i < currMaxNonOverlap + text.length())
+                        r[j].and(patternIdx.get(text.charAt(i - currMaxNonOverlap)));
+                    
+                    r[j].or(old);
                     
                     old = temp;
                 }
@@ -79,12 +80,12 @@ public class BitapSearcher{
                 r[j].leftShift().set(0);
                 
                 if(!found && r[j].get(pattern.length())){
-                    int index = i - maxNonOverlap;
+                    int index = i - currMaxNonOverlap;
                     int length = Math.min(index + 1, pattern.length());
-                    int partialMaxEdits = (int)(maxEdits < 1.0 ? (maxEdits * length) : maxEdits);
+                    int currPartialMaxEdits = maxEdits.get(length);
                     
-                    if(j <= partialMaxEdits && length >= currMinOverlap){
-                        matches.add(new FuzzyMatch<Integer>(index, length, j));
+                    if(j <= currPartialMaxEdits && length >= currMinOverlap){
+                        matches.add(new FuzzyMatch(index, length, j));
                     }
                     
                     found = true;
