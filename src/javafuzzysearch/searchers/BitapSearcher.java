@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Set;
 
 /**
- * Implementation of the Bitap fuzzy matching algorithm for Hamming distance.
+ * Implementation of the Bitap fuzzy searching algorithm for Hamming distance.
  */
 public class BitapSearcher{
     private LengthParam maxEdits;
@@ -27,7 +27,7 @@ public class BitapSearcher{
         Map<Character, BitVector> res = new HashMap<>();
         
         for(char a : alphabet){
-            res.put(a, new BitVector(pattern.length()));
+            res.put(a, new BitVector(pattern.length() + 1));
         }
         
         for(int i = 0; i < pattern.length(); i++){
