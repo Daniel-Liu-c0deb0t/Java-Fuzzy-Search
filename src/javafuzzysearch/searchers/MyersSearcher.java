@@ -17,15 +17,18 @@ import java.util.Set;
 public class MyersSearcher{
     private LengthParam maxEdits;
     private LengthParam minOverlap;
+    private boolean allowTranspositions;
     
-    public MyersSearcher(LengthParam maxEdits, LengthParam minOverlap){
+    public MyersSearcher(LengthParam maxEdits, LengthParam minOverlap, boolean allowTranspositions){
         this.maxEdits = maxEdits;
         this.minOverlap = minOverlap;
+        this.allowTranspositions = allowTranspositions;
     }
     
-    public MyersSearcher(LengthParam maxEdits){
+    public MyersSearcher(LengthParam maxEdits, boolean allowTranspositions){
         this.maxEdits = maxEdits;
         this.minOverlap = new LengthParam(0, false, true);
+        this.allowTranspositions = allowTranspositions;
     }
     
     public Map<Character, BitVector> preprocessPattern(String pattern, Set<Character> alphabet){
@@ -56,6 +59,9 @@ public class MyersSearcher{
         BitVector vn = new BitVector(pattern.length());
         BitVector vp = new BitVector(pattern.length()).set(0, pattern.length());
         BitVector allSet = new BitVector(pattern.length()).set(0, pattern.length());
+        BitVector prevM = null;
+        BitVector prevD0 = null;
+
         int dist = pattern.length();
         
         List<FuzzyMatch> matches = new ArrayList<>();
@@ -67,13 +73,27 @@ public class MyersSearcher{
             else
                 m = allSet;
             
+            BitVector tr = null;
+            if(allowTranspositions){
+                tr = new BitVector(pattern.length());
+                if(i != 0)
+                    tr = tr.or(prevD0).not().and(m).leftShift().and(prevM);
+            }
             BitVector d0 = new BitVector(pattern.length()).or(m).and(vp).add(vp).xor(vp).or(m).or(vn);
+            if(allowTranspositions)
+                d0 = d0.or(tr);
+
             BitVector hp = new BitVector(pattern.length()).or(d0).or(vp).not().or(vn);
             BitVector hn = new BitVector(pattern.length()).or(vp).and(d0);
             
             vp = new BitVector(pattern.length()).or(d0).orLShift(hp).not().orLShift(hn);
             vn = new BitVector(pattern.length()).or(d0).andLShift(hp);
-            
+
+            if(allowTranspositions){
+                prevM = m;
+                prevD0 = d0;
+            }
+
             if(hp.get(pattern.length() - 1)){
                 dist++;
             }else if(hn.get(pattern.length() - 1)){
