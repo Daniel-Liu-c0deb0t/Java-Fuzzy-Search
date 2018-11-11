@@ -8,6 +8,7 @@ public class DPTest{
         Tester t = new Tester("DP Test");
         
         DPSearcher s = new DPSearcher(new LengthParam(0, false, false), new LengthParam(0, false, false), false);
-        s.search("hello world", "hello");
+        t.testStrEquals(s.search("hello world", "hello"),
+                        "[FuzzyMatch(index = 4, length = 5, edits = 0)]");
     }
 }
