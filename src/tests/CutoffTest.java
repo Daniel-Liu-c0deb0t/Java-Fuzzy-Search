@@ -26,5 +26,21 @@ public class CutoffTest{
                         "[FuzzyMatch(index = 3, length = 4, edits = 1)]");
         t.testStrEquals(res.get(0).getPath(),
                         "[SAME, DEL, SAME, SAME, SAME]");
+
+        CutoffSearcher s2 = new CutoffSearcher(new LengthParam(0, false, false), new LengthParam(1, false, true), true);
+
+        t.testStrEquals(s2.search("ello world", "hello", false),
+                        "[FuzzyMatch(index = 3, length = 4, edits = 0)]");
+
+        t.testStrEquals(s2.search("hello worl", "world", false),
+                        "[FuzzyMatch(index = 10, length = 4, edits = 0)]");
+
+        CutoffSearcher s3 = new CutoffSearcher(new LengthParam(1, false, false), new LengthParam(1, false, true), true);
+
+        t.testStrEquals(s3.search("ello world", "hello", false),
+                        "[FuzzyMatch(index = 3, length = 4, edits = 0), FuzzyMatch(index = 4, length = 5, edits = 1)]");
+
+        t.testStrEquals(s3.search("hello worl", "world", false),
+                        "[FuzzyMatch(index = 9, length = 4, edits = 1), FuzzyMatch(index = 10, length = 4, edits = 0)]");
     }
 }

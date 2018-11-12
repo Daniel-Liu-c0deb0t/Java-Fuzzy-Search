@@ -30,5 +30,8 @@ public class BitapTest{
         
         t.testStrEquals(s3.search("llo world", "hello"),
                         "[]");
+
+        t.testStrEquals(s3.search("hello worl", "world"),
+                        "[FuzzyMatch(index = 10, length = 4, edits = 0)]");
     }
 }

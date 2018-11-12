@@ -117,7 +117,7 @@ public class CutoffSearcher{
             if(last == pattern.length()){
                 int dist = dp[i][last];
                 int index = i - 1 - currMaxNonOverlap;
-                int length = Math.min(index + 1, Math.min(i - start[i][last], currMaxNonOverlap + text.length() + 1 - start[i][last]));
+                int length = Math.min(index + 1, Math.min(i - start[i][last], currMaxNonOverlap + text.length() - start[i][last]));
                 int currPartialMaxEdits = maxEdits.get(length);
 
                 if(dist <= currPartialMaxEdits && (!useMinOverlap || length >= currMinOverlap)){
@@ -134,7 +134,7 @@ public class CutoffSearcher{
                         }
 
                         Collections.reverse(pathList);
-                        m.paths(pathList);
+                        m.withPath(pathList);
                     }
                     matches.add(m);
                 }

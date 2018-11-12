@@ -4,6 +4,18 @@ public class LengthParam{
     private double value;
     private boolean percentage;
     private boolean lengthMinus;
+
+    public LengthParam(double value){
+        this.value = value;
+        this.percentage = false;
+        this.lengthMinus = false;
+    }
+
+    public LengthParam(double value, boolean percentage){
+        this.value = value;
+        this.percentage = percentage;
+        this.lengthMinus = false;
+    }
     
     public LengthParam(double value, boolean percentage, boolean lengthMinus){
         this.value = value;

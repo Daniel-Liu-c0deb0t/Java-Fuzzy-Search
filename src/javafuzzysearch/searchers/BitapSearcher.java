@@ -18,6 +18,11 @@ public class BitapSearcher{
     private LengthParam maxEdits;
     private LengthParam minOverlap;
     
+    public BitapSearcher(LengthParam maxEdits){
+        this.maxEdits = maxEdits;
+        this.minOverlap = new LengthParam(0, false, true);
+    }
+
     public BitapSearcher(LengthParam maxEdits, LengthParam minOverlap){
         this.maxEdits = maxEdits;
         this.minOverlap = minOverlap;
