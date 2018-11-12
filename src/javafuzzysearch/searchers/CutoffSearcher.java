@@ -2,6 +2,7 @@ package javafuzzysearch.searchers;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
 
 import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.Utils;
@@ -29,7 +30,7 @@ public class CutoffSearcher{
         this.useMinOverlap = false;
     }
 
-    public List<FuzzyMatch> search(String text, String pattern){
+    public List<FuzzyMatch> search(String text, String pattern, boolean returnPath){
         if(pattern.isEmpty()){
             return new ArrayList<FuzzyMatch>();
         }
@@ -39,6 +40,10 @@ public class CutoffSearcher{
 
         int[][] dp = new int[currMaxNonOverlap * 2 + text.length() + 1][pattern.length() + 1];
         int[][] start = new int[currMaxNonOverlap * 2 + text.length() + 1][pattern.length() + 1];
+        FuzzyMatch.Edit[][] path = null;
+
+        if(returnPath)
+            path = new FuzzyMatch.Edit[currMaxNonOverlap * 2 + text.length() + 1][pattern.length() + 1];
 
         int currFullMaxEdits = maxEdits.get(pattern.length());
         int last = Math.min(currFullMaxEdits + 1, pattern.length());
@@ -49,11 +54,15 @@ public class CutoffSearcher{
         for(int i = 0; i <= currMaxNonOverlap * 2 + text.length(); i++){
             dp[i][0] = 0;
             start[i][0] = i;
+            if(returnPath)
+                path[i][0] = null;
         }
 
-        for(int i = 0; i <= last; i++){
+        for(int i = 1; i <= last; i++){
             dp[0][i] = i;
             start[0][i] = 0;
+            if(returnPath)
+                path[0][i] = FuzzyMatch.Edit.DEL;
         }
 
         for(int i = 1; i <= currMaxNonOverlap * 2 + text.length(); i++){
@@ -62,6 +71,8 @@ public class CutoffSearcher{
                         text.charAt(i - 1 - currMaxNonOverlap) == pattern.charAt(j - 1)){
                     dp[i][j] = dp[i - 1][j - 1];
                     start[i][j] = start[i - 1][j - 1];
+                    if(returnPath)
+                        path[i][j] = FuzzyMatch.Edit.SAME;
                 }else{
                     int sub = dp[i - 1][j - 1];
                     int ins = j > prevLast ? Integer.MAX_VALUE : dp[i - 1][j];
@@ -77,15 +88,23 @@ public class CutoffSearcher{
                     if(sub <= ins && sub <= del && sub <= tra){
                         dp[i][j] = sub + 1;
                         start[i][j] = start[i - 1][j - 1];
+                        if(returnPath)
+                            path[i][j] = FuzzyMatch.Edit.SUB;
                     }else if(ins <= sub && ins <= del && ins <= tra){
                         dp[i][j] = ins + 1;
                         start[i][j] = start[i - 1][j];
+                        if(returnPath)
+                            path[i][j] = FuzzyMatch.Edit.INS;
                     }else if(del <= sub && del <= ins && del <= tra){
                         dp[i][j] = del + 1;
                         start[i][j] = start[i][j - 1];
+                        if(returnPath)
+                            path[i][j] = FuzzyMatch.Edit.DEL;
                     }else{
                         dp[i][j] = tra + 1;
                         start[i][j] = start[i - 2][j - 2];
+                        if(returnPath)
+                            path[i][j] = FuzzyMatch.Edit.TRA;
                     }
                 }
             }
@@ -102,7 +121,22 @@ public class CutoffSearcher{
                 int currPartialMaxEdits = maxEdits.get(length);
 
                 if(dist <= currPartialMaxEdits && (!useMinOverlap || length >= currMinOverlap)){
-                    matches.add(new FuzzyMatch(index, useMinOverlap ? length : (i - start[i][last]), dist));
+                    FuzzyMatch m = new FuzzyMatch(index, useMinOverlap ? length : (i - start[i][last]), dist);
+                    if(returnPath){
+                        List<FuzzyMatch.Edit> pathList = new ArrayList<>();
+                        FuzzyMatch.Edit curr = path[i][last];
+                        int x = i, y = last;
+                        while(curr != null){
+                            pathList.add(curr);
+                            x += curr.x;
+                            y += curr.y;
+                            curr = path[x][y];
+                        }
+
+                        Collections.reverse(pathList);
+                        m.paths(pathList);
+                    }
+                    matches.add(m);
                 }
             }else{
                 last++;
