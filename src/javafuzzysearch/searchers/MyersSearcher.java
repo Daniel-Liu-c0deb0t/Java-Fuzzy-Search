@@ -17,18 +17,20 @@ import java.util.Set;
 public class MyersSearcher{
     private LengthParam maxEdits;
     private LengthParam minOverlap;
-    private boolean allowTranspositions;
+    private boolean allowTranspositions, useMinOverlap;
     
     public MyersSearcher(LengthParam maxEdits, LengthParam minOverlap, boolean allowTranspositions){
         this.maxEdits = maxEdits;
         this.minOverlap = minOverlap;
         this.allowTranspositions = allowTranspositions;
+        this.useMinOverlap = true;
     }
     
     public MyersSearcher(LengthParam maxEdits, boolean allowTranspositions){
         this.maxEdits = maxEdits;
         this.minOverlap = new LengthParam(0, false, true);
         this.allowTranspositions = allowTranspositions;
+        this.useMinOverlap = false;
     }
     
     public Map<Character, BitVector> preprocessPattern(String pattern, Set<Character> alphabet){
@@ -101,13 +103,11 @@ public class MyersSearcher{
             }
             
             int index = i - currMaxNonOverlap;
-            int length = Math.min(index + 1, pattern.length());
+            int length = Math.min(index + 1, Math.min(pattern.length(), text.length() - (index + 1 - pattern.length())));
             int currPartialMaxEdits = maxEdits.get(length);
             
-            // note that using min overlap may produce inaccurate lengths and indexes!
-            // to fix the problem, the algorithm must be able to count the number of insertions and deletions
-            if(dist <= currPartialMaxEdits && (currMaxNonOverlap == 0 || length >= currMinOverlap)){
-                matches.add(new FuzzyMatch(index, currMaxNonOverlap == 0 ? pattern.length() : length, dist));
+            if(dist <= currPartialMaxEdits && (!useMinOverlap || length >= currMinOverlap)){
+                matches.add(new FuzzyMatch(index, useMinOverlap ? length : pattern.length(), dist));
             }
         }
         

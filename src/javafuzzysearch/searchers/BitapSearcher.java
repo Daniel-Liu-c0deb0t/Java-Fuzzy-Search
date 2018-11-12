@@ -81,7 +81,7 @@ public class BitapSearcher{
                 
                 if(!found && r[j].get(pattern.length())){
                     int index = i - currMaxNonOverlap;
-                    int length = Math.min(index + 1, pattern.length());
+                    int length = Math.min(index + 1, Math.min(pattern.length(), text.length() - (index + 1 - pattern.length())));
                     int currPartialMaxEdits = maxEdits.get(length);
                     
                     if(j <= currPartialMaxEdits && length >= currMinOverlap){
