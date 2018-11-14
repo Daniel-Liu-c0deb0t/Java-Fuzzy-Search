@@ -37,15 +37,4 @@ public class FuzzyMatch{
     public String toString(){
         return String.format("FuzzyMatch(index = %d, length = %d, edits = %d)", index, length, edits);
     }
-
-    public static enum Edit{
-        SUB(-1, -1), INS(-1, 0), DEL(0, -1), TRA(-2, -2), SAME(-1, -1);
-
-        public int x, y;
-
-        Edit(int x, int y){
-            this.x = x;
-            this.y = y;
-        }
-    }
 }
