@@ -3,6 +3,7 @@ package tests;
 import javafuzzysearch.searchers.CutoffSearcher;
 import javafuzzysearch.utils.LengthParam;
 import javafuzzysearch.utils.FuzzyMatch;
+import javafuzzysearch.utils.EditWeights;
 
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class CutoffTest{
         t.testStrEquals(res,
                         "[FuzzyMatch(index = 3, length = 4, edits = 1)]");
         t.testStrEquals(res.get(0).getPath(),
-                        "[h, - e, l, l, o]");
+                        "['h', - 'e', 'l', 'l', 'o']");
 
         CutoffSearcher s2 = new CutoffSearcher(new LengthParam(0, false, false), new LengthParam(1, false, true), true);
 
@@ -42,5 +43,7 @@ public class CutoffTest{
 
         t.testStrEquals(s3.search("hello worl", "world", false),
                         "[FuzzyMatch(index = 9, length = 4, edits = 1), FuzzyMatch(index = 10, length = 4, edits = 0)]");
+
+        EditWeights weights = new EditWeights();
     }
 }

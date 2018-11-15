@@ -4,6 +4,10 @@ public interface Edit{
     public int getX();
     public int getY();
 
+    public static enum Type{
+        SUB, INS, DEL, TRA;
+    }
+
     public static abstract class SingleEdit implements Edit{
         protected char c;
 
@@ -50,7 +54,7 @@ public interface Edit{
 
         @Override
         public String toString(){
-            return c + "";
+            return "'" + c + "'";
         }
     }
 
@@ -71,7 +75,7 @@ public interface Edit{
 
         @Override
         public String toString(){
-            return "+ " + c;
+            return "+ '" + c + "'";
         }
     }
 
@@ -92,7 +96,7 @@ public interface Edit{
 
         @Override
         public String toString(){
-            return "- " + c;
+            return "- '" + c + "'";
         }
     }
 
@@ -113,7 +117,7 @@ public interface Edit{
 
         @Override
         public String toString(){
-            return c1 + " -> " + c2;
+            return "'" + c1 + "' -> '" + c2 + "'";
         }
     }
 
@@ -135,7 +139,7 @@ public interface Edit{
 
         @Override
         public String toString(){
-            return c2 + "" + c1 + " -> " + c1 + "" + c2;
+            return "'" + c2 + c1 + "' -> '" + c1 + c2 + "'";
         }
     }
 }

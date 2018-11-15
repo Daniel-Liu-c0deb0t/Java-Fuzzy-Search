@@ -105,7 +105,7 @@ public class CutoffSearcher{
                         dp[i][j] = tra + 1;
                         start[i][j] = start[i - 2][j - 2];
                         if(returnPath)
-                            path[i][j] = new Edit.Transpose(pattern.charAt(j - 2), pattern.charAt(j - 1));
+                            path[i][j] = new Edit.Transpose(pattern.charAt(j - 1), pattern.charAt(j - 2));
                     }
                 }
             }
