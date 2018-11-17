@@ -5,32 +5,56 @@ import java.util.HashMap;
 import java.util.EnumMap;
 
 public class EditWeights{
-    private Map<Character, Weights> map;
+    private Map<Edit.Type, Map<Character, Integer>> mapSingle;
+    private Map<Edit.Type, Map<Character, Map<Character, Integer>>> mapPair;
 
     public EditWeights(){
-        map = new HashMap<>();
-        map.put(null, new Weights(1, 1, 1, 1));
+        mapSingle = new EnumMap<>(Edit.Type.class);
+
+        mapSingle.put(Edit.Type.INS, new HashMap<Character, Integer>());
+        mapSingle.get(Edit.Type.INS).put(null, 1);
+
+        mapSingle.put(Edit.Type.DEL, new HashMap<Character, Integer>());
+        mapSingle.get(Edit.Type.DEL).put(null, 1);
+
+        mapSingle.put(Edit.Type.SAME, new HashMap<Character, Integer>());
+        mapSingle.get(Edit.Type.SAME).put(null, 0);
+
+        mapPair = new EnumMap<>(Edit.Type.class);
+
+        mapPair.put(Edit.Type.SUB, new HashMap<Character, HashMap<Character, Integer>>());
+        mapPair.get(Edit.Type.SUB).put(null, new HashMap<Character, Integer>());
+        mapPair.get(Edit.Type.SUB).get(null).put(null, 1);
+
+        mapPair.put(Edit.Type.TRA, new HashMap<Character, Integer>());
+        mapPair.get(Edit.Type.TRA).put(null, new HashMap<Character, Integer>());
+        mapPair.get(Edit.Type.TRA).get(null).put(null, 1);
     }
 
-    public void setDefault(int sub, int ins, int del, int tra){
-        map.put(null, new Weights(sub, ins, del, tra));
+    public void setDefault(int same, int sub, int ins, int del, int tra){
+        mapSingle.get(Edit.Type.INS).put(null, ins);
+        mapSingle.get(Edit.Type.DEL).put(null, del);
+        mapSingle.get(Edit.Type.SAME).put(null, same);
+
+        mapPair.get(Edit.Type.SUB).get(null).put(null, sub);
+        mapPair.get(Edit.Type.TRA).get(null).put(null, tra);
     }
 
-    public void setDefault(int sub, int ins, int del){
-        map.put(null, new Weights(sub, ins, del, 1));
+    public void setDefault(int same, int sub, int ins, int del){
+        setDefault(same, sub, ins, del, 1);
     }
 
-    public void set(char c, int sub, int ins, int del, int tra){
-        map.put(c, new Weights(sub, ins, del, tra));
+    public void set(char c, int same, int sub, int ins, int del, int tra){
+        map.put(c, new Weights(same, sub, ins, del, tra));
     }
 
-    public void set(char c, int sub, int ins, int del){
-        map.put(c, new Weights(sub, ins, del, null));
+    public void set(char c, int same, int sub, int ins, int del){
+        map.put(c, new Weights(same, sub, ins, del, null));
     }
 
     public void set(char c, Edit.Type type, int val){
         if(!map.containsKey(c))
-            map.put(c, new Weights(null, null, null, null));
+            map.put(c, new Weights(null, null, null, null, null));
 
         map.get(c).set(type, val);
     }
@@ -45,25 +69,5 @@ public class EditWeights{
             return map.get(null).get(type);
 
         return w.get(type);
-    }
-
-    private static class Weights{
-        Map<Edit.Type, Integer> weights;
-
-        public Weights(Integer sub, Integer ins, Integer del, Integer tra){
-            weights = new EnumMap<>(Edit.Type.class);
-            weights.put(Edit.Type.SUB, sub);
-            weights.put(Edit.Type.INS, ins);
-            weights.put(Edit.Type.DEL, del);
-            weights.put(Edit.Type.TRA, tra);
-        }
-
-        public void set(Edit.Type type, Integer val){
-            weights.put(type, val);
-        }
-
-        public Integer get(Edit.Type type){
-            return weights.get(type);
-        }
     }
 }

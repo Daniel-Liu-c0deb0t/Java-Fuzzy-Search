@@ -5,7 +5,13 @@ public interface Edit{
     public int getY();
 
     public static enum Type{
-        SUB, INS, DEL, TRA;
+        SAME(true), SUB(false), INS(true), DEL(true), TRA(false);
+
+        public boolean single;
+
+        Type(boolean single){
+            this.single = single;
+        }
     }
 
     public static abstract class SingleEdit implements Edit{

@@ -8,6 +8,7 @@ import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.Edit;
 import javafuzzysearch.utils.Utils;
 import javafuzzysearch.utils.LengthParam;
+import javafuzzysearch.utils.EditWeights;
 
 /**
  * Implementation of vanilla DP with Ukkonen's cutoff algorithm for computing Levenshtein distance.
@@ -15,18 +16,29 @@ import javafuzzysearch.utils.LengthParam;
 public class CutoffSearcher{
     private LengthParam maxEdits;
     private LengthParam minOverlap;
+    private EditWeights editWeights;
     private boolean allowTranspositions, useMinOverlap;
     
-    public CutoffSearcher(LengthParam maxEdits, LengthParam minOverlap, boolean allowTranspositions){
+    public CutoffSearcher(LengthParam maxEdits, LengthParam minOverlap, EditWeights editWeights, boolean allowTranspositions){
         this.maxEdits = maxEdits;
         this.minOverlap = minOverlap;
+        this.editWeights = editWeights;
         this.allowTranspositions = allowTranspositions;
         this.useMinOverlap = true;
+    }
+
+    public CutoffSearcher(LengthParam maxEdits, EditWeights editWeights, boolean allowTranspositions){
+        this.maxEdits = maxEdits;
+        this.minOverlap = new LengthParam(0, false, true);
+        this.editWeights = editWeights;
+        this.allowTranspositions = allowTranspositions;
+        this.useMinOverlap = false;
     }
 
     public CutoffSearcher(LengthParam maxEdits, boolean allowTranspositions){
         this.maxEdits = maxEdits;
         this.minOverlap = new LengthParam(0, false, true);
+        this.editWeights = new EditWeights();
         this.allowTranspositions = allowTranspositions;
         this.useMinOverlap = false;
     }
@@ -60,7 +72,7 @@ public class CutoffSearcher{
         }
 
         for(int i = 1; i <= last; i++){
-            dp[0][i] = i;
+            dp[0][i] = i * EditWeights.get(pattern.charAt(i - 1), Edit.Type.DEL);
             start[0][i] = 0;
             if(returnPath)
                 path[0][i] = new Edit.Delete(pattern.charAt(i - 1));
@@ -70,7 +82,7 @@ public class CutoffSearcher{
             for(int j = 1; j <= last; j++){
                 if(i <= currMaxNonOverlap || i > text.length() + currMaxNonOverlap ||
                         text.charAt(i - 1 - currMaxNonOverlap) == pattern.charAt(j - 1)){
-                    dp[i][j] = dp[i - 1][j - 1];
+                    dp[i][j] = dp[i - 1][j - 1] + EditWeights.get(pattern.charAt(j - 1), Edit.Type.SAME);
                     start[i][j] = start[i - 1][j - 1];
                     if(returnPath)
                         path[i][j] = new Edit.Same(pattern.charAt(j - 1));
@@ -87,7 +99,7 @@ public class CutoffSearcher{
                     }
 
                     if(sub <= ins && sub <= del && sub <= tra){
-                        dp[i][j] = sub + 1;
+                        dp[i][j] = sub + EditWeights.get(pattern.charAt(j - 1), Edit.Type.SUB);
                         start[i][j] = start[i - 1][j - 1];
                         if(returnPath)
                             path[i][j] = new Edit.Substitute(pattern.charAt(j - 1), text.charAt(i - 1 - currMaxNonOverlap));
