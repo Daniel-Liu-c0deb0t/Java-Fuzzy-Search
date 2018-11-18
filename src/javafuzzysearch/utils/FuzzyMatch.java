@@ -13,7 +13,7 @@ public class FuzzyMatch{
         this.edits = edits;
     }
 
-    public void withPath(List<Edit> path){
+    public void setPath(List<Edit> path){
         this.path = path;
     }
 

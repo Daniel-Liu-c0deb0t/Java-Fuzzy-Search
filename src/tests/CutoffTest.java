@@ -11,7 +11,7 @@ public class CutoffTest{
     public static void main(String[] args){
         Tester t = new Tester("Cutoff Test");
         
-        CutoffSearcher s = new CutoffSearcher(new LengthParam(1, false, false), true);
+        CutoffSearcher s = new CutoffSearcher().scoreThreshold(new LengthParam(1)).allowTranspositions();
 
         t.testStrEquals(s.search("hlelo world", "hello", false),
                         "[FuzzyMatch(index = 4, length = 5, edits = 1)]");
@@ -28,7 +28,7 @@ public class CutoffTest{
         t.testStrEquals(res.get(0).getPath(),
                         "['h', - 'e', 'l', 'l', 'o']");
 
-        CutoffSearcher s2 = new CutoffSearcher(new LengthParam(0, false, false), new LengthParam(1, false, true), new EditWeights(), true);
+        CutoffSearcher s2 = new CutoffSearcher().minOverlap(new LengthParam(1, false, true));
 
         t.testStrEquals(s2.search("ello world", "hello", false),
                         "[FuzzyMatch(index = 3, length = 4, edits = 0)]");
@@ -36,7 +36,7 @@ public class CutoffTest{
         t.testStrEquals(s2.search("hello worl", "world", false),
                         "[FuzzyMatch(index = 10, length = 4, edits = 0)]");
 
-        CutoffSearcher s3 = new CutoffSearcher(new LengthParam(1, false, false), new LengthParam(1, false, true), new EditWeights(), true);
+        CutoffSearcher s3 = new CutoffSearcher().scoreThreshold(new LengthParam(1)).minOverlap(new LengthParam(1, false, true));
 
         t.testStrEquals(s3.search("ello world", "hello", false),
                         "[FuzzyMatch(index = 3, length = 4, edits = 0), FuzzyMatch(index = 4, length = 5, edits = 1)]");
@@ -44,10 +44,9 @@ public class CutoffTest{
         t.testStrEquals(s3.search("hello worl", "world", false),
                         "[FuzzyMatch(index = 9, length = 4, edits = 1), FuzzyMatch(index = 10, length = 4, edits = 0)]");
 
-        EditWeights w = new EditWeights();
-        w.setDefault(0, 1, Integer.MAX_VALUE, 2);
+        EditWeights w = new EditWeights().setDefault(0, 1, Integer.MAX_VALUE, 2);
 
-        CutoffSearcher s4 = new CutoffSearcher(new LengthParam(2, false, false), w, false);
+        CutoffSearcher s4 = new CutoffSearcher().scoreThreshold(new LengthParam(2)).editWeights(w);
 
         t.testStrEquals(s4.search("helo world", "hello", false),
                         "[FuzzyMatch(index = 3, length = 4, edits = 2), FuzzyMatch(index = 4, length = 5, edits = 2)]");

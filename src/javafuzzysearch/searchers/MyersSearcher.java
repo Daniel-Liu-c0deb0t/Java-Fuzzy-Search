@@ -15,24 +15,26 @@ import java.util.Set;
  * Implementation of Myer's fuzzy searching algorithm for Levenshtein distance.
  */
 public class MyersSearcher{
-    private LengthParam maxEdits;
-    private LengthParam minOverlap;
-    private boolean allowTranspositions, useMinOverlap;
-    
-    public MyersSearcher(LengthParam maxEdits, LengthParam minOverlap, boolean allowTranspositions){
+    private LengthParam maxEdits = new LengthParam(0, false, false);
+    private LengthParam minOverlap = new LengthParam(0, false, true);
+    private boolean allowTranspositions = false, useMinOverlap = false;
+
+    public MyersSearcher maxEdits(LengthParam maxEdits){
         this.maxEdits = maxEdits;
+        return this;
+    }
+
+    public MyersSearcher minOverlap(LengthParam minOverlap){
         this.minOverlap = minOverlap;
-        this.allowTranspositions = allowTranspositions;
         this.useMinOverlap = true;
+        return this;
     }
-    
-    public MyersSearcher(LengthParam maxEdits, boolean allowTranspositions){
-        this.maxEdits = maxEdits;
-        this.minOverlap = new LengthParam(0, false, true);
-        this.allowTranspositions = allowTranspositions;
-        this.useMinOverlap = false;
+
+    public MyersSearcher allowTranspositions(){
+        this.allowTranspositions = true;
+        return this;
     }
-    
+
     public Map<Character, BitVector> preprocessPattern(String pattern, Set<Character> alphabet){
         Map<Character, BitVector> res = new HashMap<>();
         

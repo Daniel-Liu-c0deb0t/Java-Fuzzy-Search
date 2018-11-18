@@ -14,33 +14,35 @@ import javafuzzysearch.utils.EditWeights;
  * Implementation of vanilla DP with Ukkonen's cutoff algorithm for computing Levenshtein distance.
  */
 public class CutoffSearcher{
-    private LengthParam maxEdits;
-    private LengthParam minOverlap;
-    private EditWeights editWeights;
-    private boolean allowTranspositions, useMinOverlap;
-    
-    public CutoffSearcher(LengthParam maxEdits, LengthParam minOverlap, EditWeights editWeights, boolean allowTranspositions){
-        this.maxEdits = maxEdits;
+    private LengthParam scoreThreshold = new LengthParam(0, false, false);
+    private LengthParam minOverlap = new LengthParam(0, false, true);
+    private EditWeights editWeights = new EditWeights();
+    private boolean allowTranspositions = false, useMinOverlap = false, maximizeScore = false;
+
+    public CutoffSearcher scoreThreshold(LengthParam scoreThreshold){
+        this.scoreThreshold = scoreThreshold;
+        return this;
+    }
+
+    public CutoffSearcher minOverlap(LengthParam minOverlap){
         this.minOverlap = minOverlap;
-        this.editWeights = editWeights;
-        this.allowTranspositions = allowTranspositions;
         this.useMinOverlap = true;
+        return this;
     }
 
-    public CutoffSearcher(LengthParam maxEdits, EditWeights editWeights, boolean allowTranspositions){
-        this.maxEdits = maxEdits;
-        this.minOverlap = new LengthParam(0, false, true);
+    public CutoffSearcher allowTranspositions(){
+        this.allowTranspositions = true;
+        return this;
+    }
+
+    public CutoffSearcher editWeights(EditWeights editWeights){
         this.editWeights = editWeights;
-        this.allowTranspositions = allowTranspositions;
-        this.useMinOverlap = false;
+        return this;
     }
 
-    public CutoffSearcher(LengthParam maxEdits, boolean allowTranspositions){
-        this.maxEdits = maxEdits;
-        this.minOverlap = new LengthParam(0, false, true);
-        this.editWeights = new EditWeights();
-        this.allowTranspositions = allowTranspositions;
-        this.useMinOverlap = false;
+    public CutoffSearcher maximizeScore(){
+        this.maximizeScore = true;
+        return this;
     }
 
     public List<FuzzyMatch> search(String text, String pattern, boolean returnPath){
@@ -58,9 +60,7 @@ public class CutoffSearcher{
         if(returnPath)
             path = new Edit[currMaxNonOverlap * 2 + text.length() + 1][pattern.length() + 1];
 
-        int currFullMaxEdits = maxEdits.get(pattern.length());
-        int last = Math.min(currFullMaxEdits + 1, pattern.length());
-        int prevLast = last;
+        int currFullScoreThreshold = scoreThreshold.get(pattern.length());
 
         List<FuzzyMatch> matches = new ArrayList<>();
 
@@ -71,12 +71,21 @@ public class CutoffSearcher{
                 path[i][0] = null;
         }
 
-        for(int i = 1; i <= last; i++){
-            dp[0][i] = Utils.mulInt(i, editWeights.get(pattern.charAt(i - 1), Edit.Type.DEL));
+        int last = pattern.length();
+        for(int i = 1; i <= pattern.length(); i++){
+            dp[0][i] = Utils.addInt(dp[0][i - 1], editWeights.get(pattern.charAt(i - 1), Edit.Type.DEL));
             start[0][i] = 0;
             if(returnPath)
                 path[0][i] = new Edit.Delete(pattern.charAt(i - 1));
+
+            if((maximizeScore && dp[0][i] < currFullScoreThreshold) ||
+                    (!maximizeScore && dp[0][i] > currFullScoreThreshold)){
+                last = i;
+                break;
+            }
         }
+
+        int prevLast = last;
 
         for(int i = 1; i <= currMaxNonOverlap * 2 + text.length(); i++){
             for(int j = 1; j <= last; j++){
@@ -128,21 +137,27 @@ public class CutoffSearcher{
 
             prevLast = last;
 
-            while(dp[i][last] > currFullMaxEdits)
+            while((maximizeScore && dp[i][last] < currFullScoreThreshold) ||
+                    (!maximizeScore && dp[i][last] > currFullScoreThreshold)){
                 last--;
+            }
 
             if(last == pattern.length()){
                 int dist = dp[i][last];
                 int index = i - 1 - currMaxNonOverlap;
                 int length = Math.min(index + 1, Math.min(i - start[i][last], currMaxNonOverlap + text.length() - start[i][last]));
-                int currPartialMaxEdits = maxEdits.get(length);
+                int currPartialScoreThreshold = scoreThreshold.get(length);
 
-                if(dist <= currPartialMaxEdits && (!useMinOverlap || length >= currMinOverlap)){
+                if(((maximizeScore && dist >= currPartialScoreThreshold) ||
+                            (!maximizeScore && dist <= currPartialScoreThreshold))
+                        && (!useMinOverlap || length >= currMinOverlap)){
                     FuzzyMatch m = new FuzzyMatch(index, useMinOverlap ? length : (i - start[i][last]), dist);
+
                     if(returnPath){
                         List<Edit> pathList = new ArrayList<>();
                         Edit curr = path[i][last];
                         int x = i, y = last;
+
                         while(curr != null){
                             pathList.add(curr);
                             x += curr.getX();
@@ -151,8 +166,9 @@ public class CutoffSearcher{
                         }
 
                         Collections.reverse(pathList);
-                        m.withPath(pathList);
+                        m.setPath(pathList);
                     }
+
                     matches.add(m);
                 }
             }else{

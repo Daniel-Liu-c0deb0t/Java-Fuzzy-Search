@@ -15,19 +15,19 @@ import java.util.Set;
  * Implementation of the Bitap fuzzy searching algorithm for Hamming distance.
  */
 public class BitapSearcher{
-    private LengthParam maxEdits;
-    private LengthParam minOverlap;
-    
-    public BitapSearcher(LengthParam maxEdits){
+    private LengthParam maxEdits = new LengthParam(0, false, false);
+    private LengthParam minOverlap = new LengthParam(0, false, true);
+
+    public BitapSearcher maxEdits(LengthParam maxEdits){
         this.maxEdits = maxEdits;
-        this.minOverlap = new LengthParam(0, false, true);
+        return this;
     }
 
-    public BitapSearcher(LengthParam maxEdits, LengthParam minOverlap){
-        this.maxEdits = maxEdits;
+    public BitapSearcher minOverlap(LengthParam minOverlap){
         this.minOverlap = minOverlap;
+        return this;
     }
-    
+
     public Map<Character, BitVector> preprocessPattern(String pattern, Set<Character> alphabet){
         Map<Character, BitVector> res = new HashMap<>();
         
@@ -41,11 +41,11 @@ public class BitapSearcher{
         
         return res;
     }
-    
+
     public List<FuzzyMatch> search(String text, String pattern){
         return search(text, pattern, preprocessPattern(pattern, Utils.uniqueChars(text, pattern)));
     }
-    
+
     public List<FuzzyMatch> search(String text, String pattern, Map<Character, BitVector> patternIdx){
         if(pattern.isEmpty())
             return new ArrayList<FuzzyMatch>();

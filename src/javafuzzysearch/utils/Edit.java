@@ -5,12 +5,14 @@ public interface Edit{
     public int getY();
 
     public static enum Type{
-        SAME(true), SUB(false), INS(true), DEL(true), TRA(false);
+        SAME(true, 0), SUB(false, 1), INS(true, 1), DEL(true, 1), TRA(false, 1);
 
         public boolean single;
+        public int defaultWeight;
 
-        Type(boolean single){
+        Type(boolean single, int defaultWeight){
             this.single = single;
+            this.defaultWeight = defaultWeight;
         }
     }
 
