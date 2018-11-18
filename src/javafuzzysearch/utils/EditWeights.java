@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.EnumMap;
 
 public class EditWeights{
+    private static final int defaultSame = 0, defaultSub = 1, defaultIns = 1, defaultDel = 1, defaultTra = 1;
+
     private Map<Edit.Type, Map<Character, Integer>> mapSingle;
     private Map<Edit.Type, Map<Character, Map<Character, Integer>>> mapPair;
 
@@ -12,23 +14,23 @@ public class EditWeights{
         mapSingle = new EnumMap<>(Edit.Type.class);
 
         mapSingle.put(Edit.Type.INS, new HashMap<Character, Integer>());
-        mapSingle.get(Edit.Type.INS).put(null, 1);
+        mapSingle.get(Edit.Type.INS).put(null, defaultIns);
 
         mapSingle.put(Edit.Type.DEL, new HashMap<Character, Integer>());
-        mapSingle.get(Edit.Type.DEL).put(null, 1);
+        mapSingle.get(Edit.Type.DEL).put(null, defaultDel);
 
         mapSingle.put(Edit.Type.SAME, new HashMap<Character, Integer>());
-        mapSingle.get(Edit.Type.SAME).put(null, 0);
+        mapSingle.get(Edit.Type.SAME).put(null, defaultSame);
 
         mapPair = new EnumMap<>(Edit.Type.class);
 
-        mapPair.put(Edit.Type.SUB, new HashMap<Character, HashMap<Character, Integer>>());
+        mapPair.put(Edit.Type.SUB, new HashMap<Character, Map<Character, Integer>>());
         mapPair.get(Edit.Type.SUB).put(null, new HashMap<Character, Integer>());
-        mapPair.get(Edit.Type.SUB).get(null).put(null, 1);
+        mapPair.get(Edit.Type.SUB).get(null).put(null, defaultSub);
 
-        mapPair.put(Edit.Type.TRA, new HashMap<Character, Integer>());
+        mapPair.put(Edit.Type.TRA, new HashMap<Character, Map<Character, Integer>>());
         mapPair.get(Edit.Type.TRA).put(null, new HashMap<Character, Integer>());
-        mapPair.get(Edit.Type.TRA).get(null).put(null, 1);
+        mapPair.get(Edit.Type.TRA).get(null).put(null, defaultTra);
     }
 
     public void setDefault(int same, int sub, int ins, int del, int tra){
@@ -41,33 +43,47 @@ public class EditWeights{
     }
 
     public void setDefault(int same, int sub, int ins, int del){
-        setDefault(same, sub, ins, del, 1);
+        setDefault(same, sub, ins, del, defaultTra);
     }
 
-    public void set(char c, int same, int sub, int ins, int del, int tra){
-        map.put(c, new Weights(same, sub, ins, del, tra));
+    public void set(char c, int same, int ins, int del){
+        mapSingle.get(Edit.Type.INS).put(c, ins);
+        mapSingle.get(Edit.Type.DEL).put(c, del);
+        mapSingle.get(Edit.Type.SAME).put(c, same);
     }
 
-    public void set(char c, int same, int sub, int ins, int del){
-        map.put(c, new Weights(same, sub, ins, del, null));
+    public void set(Character a, Character b, int sub, int tra){
+        if(!mapPair.get(Edit.Type.SUB).containsKey(a))
+            mapPair.get(Edit.Type.SUB).put(a, new HashMap<Character, Integer>());
+        mapPair.get(Edit.Type.SUB).get(a).put(b, sub);
+
+        if(!mapPair.get(Edit.Type.TRA).containsKey(a))
+            mapPair.get(Edit.Type.TRA).put(a, new HashMap<Character, Integer>());
+        mapPair.get(Edit.Type.TRA).get(a).put(b, tra);
     }
 
-    public void set(char c, Edit.Type type, int val){
-        if(!map.containsKey(c))
-            map.put(c, new Weights(null, null, null, null, null));
-
-        map.get(c).set(type, val);
+    public void set(Character a, Character b, int sub){
+        set(a, b, sub, defaultTra);
     }
 
     public int get(char c, Edit.Type type){
-        if(!map.containsKey(c))
-            return map.get(null).get(type);
+        if(mapSingle.get(type).containsKey(c))
+            return mapSingle.get(type).get(c);
 
-        Weights w = map.get(c);
+        return mapSingle.get(type).get(null);
+    }
 
-        if(w.get(type) == null)
-            return map.get(null).get(type);
-
-        return w.get(type);
+    public int get(char a, char b, Edit.Type type){
+        if(mapPair.get(type).containsKey(a)){
+            if(mapPair.get(type).get(a).containsKey(b))
+                return mapPair.get(type).get(a).get(b);
+            else
+                return mapPair.get(type).get(a).get(null);
+        }else{
+            if(mapPair.get(type).get(null).containsKey(b))
+                return mapPair.get(type).get(null).get(b);
+            else
+                return mapPair.get(type).get(null).get(null);
+        }
     }
 }

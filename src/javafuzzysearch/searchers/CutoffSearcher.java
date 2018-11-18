@@ -72,7 +72,7 @@ public class CutoffSearcher{
         }
 
         for(int i = 1; i <= last; i++){
-            dp[0][i] = i * EditWeights.get(pattern.charAt(i - 1), Edit.Type.DEL);
+            dp[0][i] = Utils.mulInt(i, editWeights.get(pattern.charAt(i - 1), Edit.Type.DEL));
             start[0][i] = 0;
             if(returnPath)
                 path[0][i] = new Edit.Delete(pattern.charAt(i - 1));
@@ -82,39 +82,43 @@ public class CutoffSearcher{
             for(int j = 1; j <= last; j++){
                 if(i <= currMaxNonOverlap || i > text.length() + currMaxNonOverlap ||
                         text.charAt(i - 1 - currMaxNonOverlap) == pattern.charAt(j - 1)){
-                    dp[i][j] = dp[i - 1][j - 1] + EditWeights.get(pattern.charAt(j - 1), Edit.Type.SAME);
+                    dp[i][j] = Utils.addInt(dp[i - 1][j - 1], editWeights.get(pattern.charAt(j - 1), Edit.Type.SAME));
                     start[i][j] = start[i - 1][j - 1];
                     if(returnPath)
                         path[i][j] = new Edit.Same(pattern.charAt(j - 1));
                 }else{
-                    int sub = dp[i - 1][j - 1];
-                    int ins = j > prevLast ? Integer.MAX_VALUE : dp[i - 1][j];
-                    int del = dp[i][j - 1];
+                    int sub = Utils.addInt(dp[i - 1][j - 1],
+                        editWeights.get(pattern.charAt(j - 1), text.charAt(i - 1 - currMaxNonOverlap), Edit.Type.SUB));
+                    int ins = j > prevLast ? Integer.MAX_VALUE : Utils.addInt(dp[i - 1][j],
+                            editWeights.get(text.charAt(i - 1 - currMaxNonOverlap), Edit.Type.INS));
+                    int del = Utils.addInt(dp[i][j - 1],
+                        editWeights.get(pattern.charAt(j - 1), Edit.Type.DEL));
                     int tra = Integer.MAX_VALUE;
 
                     if(allowTranspositions && j > 1 && i > 1 + currMaxNonOverlap && i <= text.length() + currMaxNonOverlap &&
                             text.charAt(i - 1 - currMaxNonOverlap) == pattern.charAt(j - 2) &&
                             text.charAt(i - 2 - currMaxNonOverlap) == pattern.charAt(j - 1)){
-                        tra = dp[i - 2][j - 2];
+                        tra = Utils.addInt(dp[i - 2][j - 2],
+                            editWeights.get(pattern.charAt(j - 2), pattern.charAt(j - 1), Edit.Type.TRA));
                     }
 
                     if(sub <= ins && sub <= del && sub <= tra){
-                        dp[i][j] = sub + EditWeights.get(pattern.charAt(j - 1), Edit.Type.SUB);
+                        dp[i][j] = sub;
                         start[i][j] = start[i - 1][j - 1];
                         if(returnPath)
                             path[i][j] = new Edit.Substitute(pattern.charAt(j - 1), text.charAt(i - 1 - currMaxNonOverlap));
                     }else if(ins <= sub && ins <= del && ins <= tra){
-                        dp[i][j] = ins + 1;
+                        dp[i][j] = ins;
                         start[i][j] = start[i - 1][j];
                         if(returnPath)
                             path[i][j] = new Edit.Insert(text.charAt(i - 1 - currMaxNonOverlap));
                     }else if(del <= sub && del <= ins && del <= tra){
-                        dp[i][j] = del + 1;
+                        dp[i][j] = del;
                         start[i][j] = start[i][j - 1];
                         if(returnPath)
                             path[i][j] = new Edit.Delete(pattern.charAt(j - 1));
                     }else{
-                        dp[i][j] = tra + 1;
+                        dp[i][j] = tra;
                         start[i][j] = start[i - 2][j - 2];
                         if(returnPath)
                             path[i][j] = new Edit.Transpose(pattern.charAt(j - 1), pattern.charAt(j - 2));

@@ -24,4 +24,14 @@ public class Utils{
         
         return res;
     }
+
+    public static int addInt(int a, int b){
+        long c = (long)a + (long)b;
+        return (int)Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, c));
+    }
+
+    public static int mulInt(int a, int b){
+        long c = (long)a * (long)b;
+        return (int)Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, c));
+    }
 }

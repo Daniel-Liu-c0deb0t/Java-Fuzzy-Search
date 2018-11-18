@@ -28,7 +28,7 @@ public class CutoffTest{
         t.testStrEquals(res.get(0).getPath(),
                         "['h', - 'e', 'l', 'l', 'o']");
 
-        CutoffSearcher s2 = new CutoffSearcher(new LengthParam(0, false, false), new LengthParam(1, false, true), true);
+        CutoffSearcher s2 = new CutoffSearcher(new LengthParam(0, false, false), new LengthParam(1, false, true), new EditWeights(), true);
 
         t.testStrEquals(s2.search("ello world", "hello", false),
                         "[FuzzyMatch(index = 3, length = 4, edits = 0)]");
@@ -36,7 +36,7 @@ public class CutoffTest{
         t.testStrEquals(s2.search("hello worl", "world", false),
                         "[FuzzyMatch(index = 10, length = 4, edits = 0)]");
 
-        CutoffSearcher s3 = new CutoffSearcher(new LengthParam(1, false, false), new LengthParam(1, false, true), true);
+        CutoffSearcher s3 = new CutoffSearcher(new LengthParam(1, false, false), new LengthParam(1, false, true), new EditWeights(), true);
 
         t.testStrEquals(s3.search("ello world", "hello", false),
                         "[FuzzyMatch(index = 3, length = 4, edits = 0), FuzzyMatch(index = 4, length = 5, edits = 1)]");
@@ -44,6 +44,12 @@ public class CutoffTest{
         t.testStrEquals(s3.search("hello worl", "world", false),
                         "[FuzzyMatch(index = 9, length = 4, edits = 1), FuzzyMatch(index = 10, length = 4, edits = 0)]");
 
-        EditWeights weights = new EditWeights();
+        EditWeights w = new EditWeights();
+        w.setDefault(0, 1, Integer.MAX_VALUE, 2);
+
+        CutoffSearcher s4 = new CutoffSearcher(new LengthParam(2, false, false), w, false);
+
+        t.testStrEquals(s4.search("helo world", "hello", false),
+                        "[FuzzyMatch(index = 3, length = 4, edits = 2), FuzzyMatch(index = 4, length = 5, edits = 2)]");
     }
 }
