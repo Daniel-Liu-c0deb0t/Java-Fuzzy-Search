@@ -34,4 +34,22 @@ public class Utils{
         long c = (long)a * (long)b;
         return (int)Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, c));
     }
+
+    public static boolean equalsWildcard(String a, int aIdx, Set<Integer> aEscapeIdx, String b, int bIdx, Set<Integer> bEscapeIdx, Map<Character, Set<Character>> wildcardChars){
+        char c = a.charAt(aIdx);
+        char d = b.charAt(bIdx);
+
+        return c == d ||
+            (!aEscapeIdx.contains(aIdx) && wildcardChars.containsKey(c) && (wildcardChars.get(c) == null || wildcardChars.get(c).contains(d))) ||
+            (!bEscapeIdx.contains(bIdx) && wildcardChars.containsKey(d) && (wildcardChars.get(c) == null || wildcardChars.get(d).contains(c)));
+    }
+
+    public static boolean equalsWildcard(String s, Set<Integer> escapeIdx, int aIdx, int bIdx, Map<Character, Set<Character>> wildcardChars){
+        char a = s.charAt(aIdx);
+        char b = s.charAt(bIdx);
+
+        return a == b ||
+            (!escapeIdx.contains(aIdx) && wildcardChars.containsKey(a) && (wildcardChars.get(a) == null || wildcardChars.get(a).contains(b))) ||
+            (!escapeIdx.contains(bIdx) && wildcardChars.containsKey(b) && (wildcardChars.get(b) == null || wildcardChars.get(b).contains(a)));
+    }
 }

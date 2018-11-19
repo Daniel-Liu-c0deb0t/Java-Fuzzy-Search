@@ -3,6 +3,10 @@ package javafuzzysearch.searchers;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
 
 import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.Edit;
@@ -18,6 +22,7 @@ public class CutoffSearcher{
     private LengthParam minOverlap = new LengthParam(0, false, true);
     private EditWeights editWeights = new EditWeights();
     private boolean allowTranspositions = false, useMinOverlap = false, maximizeScore = false;
+    private Map<Character, Set<Character>> wildcardChars = new HashMap<>();
 
     public CutoffSearcher scoreThreshold(LengthParam scoreThreshold){
         this.scoreThreshold = scoreThreshold;
@@ -45,7 +50,16 @@ public class CutoffSearcher{
         return this;
     }
 
+    public CutoffSearcher wildcardChars(Map<Character, Set<Character>> wildcardChars){
+        this.wildcardChars = wildcardChars;
+        return this;
+    }
+
     public List<FuzzyMatch> search(String text, String pattern, boolean returnPath){
+        return search(text, pattern, returnPath, new HashSet<Integer>(), new HashSet<Integer>());
+    }
+
+    public List<FuzzyMatch> search(String text, String pattern, boolean returnPath, Set<Integer> textEscapeIdx, Set<Integer> patternEscapeIdx){
         if(pattern.isEmpty()){
             return new ArrayList<FuzzyMatch>();
         }
@@ -90,7 +104,7 @@ public class CutoffSearcher{
         for(int i = 1; i <= currMaxNonOverlap * 2 + text.length(); i++){
             for(int j = 1; j <= last; j++){
                 if(i <= currMaxNonOverlap || i > text.length() + currMaxNonOverlap ||
-                        text.charAt(i - 1 - currMaxNonOverlap) == pattern.charAt(j - 1)){
+                        Utils.equalsWildcard(text, i - 1 - currMaxNonOverlap, textEscapeIdx, pattern, j - 1, patternEscapeIdx, wildcardChars)){
                     dp[i][j] = Utils.addInt(dp[i - 1][j - 1], editWeights.get(pattern.charAt(j - 1), Edit.Type.SAME));
                     start[i][j] = start[i - 1][j - 1];
                     if(returnPath)
@@ -105,8 +119,8 @@ public class CutoffSearcher{
                     int tra = Integer.MAX_VALUE;
 
                     if(allowTranspositions && j > 1 && i > 1 + currMaxNonOverlap && i <= text.length() + currMaxNonOverlap &&
-                            text.charAt(i - 1 - currMaxNonOverlap) == pattern.charAt(j - 2) &&
-                            text.charAt(i - 2 - currMaxNonOverlap) == pattern.charAt(j - 1)){
+                            Utils.equalsWildcard(text, i - 1 - currMaxNonOverlap, textEscapeIdx, pattern, j - 2, patternEscapeIdx, wildcardChars) &&
+                            Utils.equalsWildcard(text, i - 2 - currMaxNonOverlap, textEscapeIdx, pattern, j - 1, patternEscapeIdx, wildcardChars)){
                         tra = Utils.addInt(dp[i - 2][j - 2],
                             editWeights.get(pattern.charAt(j - 2), pattern.charAt(j - 1), Edit.Type.TRA));
                     }
