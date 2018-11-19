@@ -1,5 +1,5 @@
 # Java-Fuzzy-Search
-A simple library with Java implementations of fuzzy search algorithms. The goal is to focus on doing one thing (string search) and have a ton of options and speedups for different use cases.
+A fast and flexible Java fuzzy search library. The goal is to focus on doing one thing (string search) and have a ton of options and speedups for different use cases.
 
 ## Features
 - Exact string search using the KMP algorithm
