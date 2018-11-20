@@ -2,6 +2,7 @@ package tests;
 
 import javafuzzysearch.searchers.BitapSearcher;
 import javafuzzysearch.utils.LengthParam;
+import javafuzzysearch.utils.Location;
 
 public class BitapTest{
     public static void main(String[] args){
@@ -23,7 +24,7 @@ public class BitapTest{
         t.testStrEquals(s2.search("what the", "hello"),
                         "[]");
         
-        BitapSearcher s3 = new BitapSearcher().minOverlap(new LengthParam(4, false, false));
+        BitapSearcher s3 = new BitapSearcher().minOverlap(new LengthParam(4, false, false), Location.ANY);
         
         t.testStrEquals(s3.search("ello world", "hello"),
                         "[FuzzyMatch(index = 3, length = 5, overlap = 4, score = 0)]");

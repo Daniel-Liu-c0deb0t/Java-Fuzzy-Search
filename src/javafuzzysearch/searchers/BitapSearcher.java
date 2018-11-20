@@ -4,6 +4,7 @@ import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.Utils;
 import javafuzzysearch.utils.BitVector;
 import javafuzzysearch.utils.LengthParam;
+import javafuzzysearch.utils.Location;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -19,14 +20,16 @@ public class BitapSearcher{
     private LengthParam maxEdits = new LengthParam(0, false, false);
     private LengthParam minOverlap = new LengthParam(0, false, true);
     private Map<Character, Set<Character>> wildcardChars = new HashMap<>();
+    private Location nonOverlapLocation = Location.ANY;
 
     public BitapSearcher maxEdits(LengthParam maxEdits){
         this.maxEdits = maxEdits;
         return this;
     }
 
-    public BitapSearcher minOverlap(LengthParam minOverlap){
+    public BitapSearcher minOverlap(LengthParam minOverlap, Location nonOverlapLocation){
         this.minOverlap = minOverlap;
+        this.nonOverlapLocation = nonOverlapLocation;
         return this;
     }
 
@@ -87,10 +90,18 @@ public class BitapSearcher{
         
         int currMinOverlap = minOverlap.get(pattern.length());
         int currMaxNonOverlap = pattern.length() - currMinOverlap;
-        
+
+        int startMaxNonOverlap = 0;
+        if(nonOverlapLocation != Location.END)
+            startMaxNonOverlap = currMaxNonOverlap;
+
+        int endMaxNonOverlap = 0;
+        if(nonOverlapLocation != Location.START)
+            endMaxNonOverlap = currMaxNonOverlap;
+
         // max edits allowed assuming full overlap between pattern and text
         int currFullMaxEdits = maxEdits.get(pattern.length());
-        
+
         BitVector[] r = new BitVector[currFullMaxEdits + 1];
         List<FuzzyMatch> matches = new ArrayList<>();
         
@@ -98,22 +109,22 @@ public class BitapSearcher{
             r[i] = new BitVector(pattern.length() + 1).set(0);
         }
         
-        for(int i = 0; i < currMaxNonOverlap * 2 + text.length(); i++){
+        for(int i = 0; i < startMaxNonOverlap + endMaxNonOverlap + text.length(); i++){
             BitVector old = new BitVector(pattern.length() + 1).or(r[0]);
             boolean found = false;
             
             for(int j = 0; j <= currFullMaxEdits; j++){
                 if(j == 0){
-                    if(i >= currMaxNonOverlap && i < currMaxNonOverlap + text.length()){
-                        int idx = i - currMaxNonOverlap;
+                    if(i >= startMaxNonOverlap && i < startMaxNonOverlap + text.length()){
+                        int idx = i - startMaxNonOverlap;
                         r[0].and(patternMask.get(wildcardChars.containsKey(text.charAt(idx)) &&
                                     !textEscapeIdx.contains(idx)).get(text.charAt(idx)));
                     }
                 }else{
                     BitVector temp = new BitVector(pattern.length() + 1).or(r[j]);
                     
-                    if(i >= currMaxNonOverlap && i < currMaxNonOverlap + text.length()){
-                        int idx = i - currMaxNonOverlap;
+                    if(i >= startMaxNonOverlap && i < startMaxNonOverlap + text.length()){
+                        int idx = i - startMaxNonOverlap;
                         r[j].and(patternMask.get(wildcardChars.containsKey(text.charAt(idx)) &&
                                     !textEscapeIdx.contains(idx)).get(text.charAt(idx)));
                     }
@@ -126,7 +137,7 @@ public class BitapSearcher{
                 r[j].leftShift().set(0);
                 
                 if(!found && r[j].get(pattern.length())){
-                    int index = i - currMaxNonOverlap;
+                    int index = i - startMaxNonOverlap;
                     int nonOverlapLength = Math.max(pattern.length() - index - 1, 0) + Math.max(index + 1 - text.length(), 0);
                     int overlapLength = pattern.length() - nonOverlapLength;
                     int currPartialMaxEdits = maxEdits.get(overlapLength);

@@ -4,6 +4,7 @@ import javafuzzysearch.searchers.CutoffSearcher;
 import javafuzzysearch.utils.LengthParam;
 import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.EditWeights;
+import javafuzzysearch.utils.Location;
 
 import java.util.List;
 
@@ -28,7 +29,7 @@ public class CutoffTest{
         t.testStrEquals(res.get(0).getPath(),
                         "['h', - 'e', 'l', 'l', 'o']");
 
-        CutoffSearcher s2 = new CutoffSearcher().minOverlap(new LengthParam(1, false, true));
+        CutoffSearcher s2 = new CutoffSearcher().minOverlap(new LengthParam(1, false, true), Location.ANY);
 
         t.testStrEquals(s2.search("ello world", "hello", false),
                         "[FuzzyMatch(index = 3, length = 5, overlap = 4, score = 0)]");
@@ -36,7 +37,7 @@ public class CutoffTest{
         t.testStrEquals(s2.search("hello worl", "world", false),
                         "[FuzzyMatch(index = 10, length = 5, overlap = 4, score = 0)]");
 
-        CutoffSearcher s3 = new CutoffSearcher().scoreThreshold(new LengthParam(1)).minOverlap(new LengthParam(1, false, true));
+        CutoffSearcher s3 = new CutoffSearcher().scoreThreshold(new LengthParam(1)).minOverlap(new LengthParam(1, false, true), Location.ANY);
 
         t.testStrEquals(s3.search("ello world", "hello", false),
                         "[FuzzyMatch(index = 2, length = 4, overlap = 4, score = 1), FuzzyMatch(index = 3, length = 5, overlap = 4, score = 0), FuzzyMatch(index = 4, length = 6, overlap = 4, score = 1)]");

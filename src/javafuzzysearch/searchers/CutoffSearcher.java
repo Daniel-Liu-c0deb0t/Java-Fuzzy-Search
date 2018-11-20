@@ -13,6 +13,7 @@ import javafuzzysearch.utils.Edit;
 import javafuzzysearch.utils.Utils;
 import javafuzzysearch.utils.LengthParam;
 import javafuzzysearch.utils.EditWeights;
+import javafuzzysearch.utils.Location;
 
 /**
  * Implementation of vanilla DP with Ukkonen's cutoff algorithm for computing Levenshtein distance.
@@ -23,14 +24,16 @@ public class CutoffSearcher{
     private EditWeights editWeights = new EditWeights();
     private boolean allowTranspositions = false, maximizeScore = false;
     private Map<Character, Set<Character>> wildcardChars = new HashMap<>();
+    private Location nonOverlapLocation = Location.ANY;
 
     public CutoffSearcher scoreThreshold(LengthParam scoreThreshold){
         this.scoreThreshold = scoreThreshold;
         return this;
     }
 
-    public CutoffSearcher minOverlap(LengthParam minOverlap){
+    public CutoffSearcher minOverlap(LengthParam minOverlap, Location nonOverlapLocation){
         this.minOverlap = minOverlap;
+        this.nonOverlapLocation = nonOverlapLocation;
         return this;
     }
 
@@ -65,18 +68,26 @@ public class CutoffSearcher{
         int currMinOverlap = minOverlap.get(pattern.length());
         int currMaxNonOverlap = pattern.length() - currMinOverlap;
 
-        int[][] dp = new int[currMaxNonOverlap * 2 + text.length() + 1][pattern.length() + 1];
-        int[][] start = new int[currMaxNonOverlap * 2 + text.length() + 1][pattern.length() + 1];
+        int startMaxNonOverlap = 0;
+        if(nonOverlapLocation != Location.END)
+            startMaxNonOverlap = currMaxNonOverlap;
+
+        int endMaxNonOverlap = 0;
+        if(nonOverlapLocation != Location.START)
+            endMaxNonOverlap = currMaxNonOverlap;
+
+        int[][] dp = new int[startMaxNonOverlap + endMaxNonOverlap + text.length() + 1][pattern.length() + 1];
+        int[][] start = new int[startMaxNonOverlap + endMaxNonOverlap + text.length() + 1][pattern.length() + 1];
         Edit[][] path = null;
 
         if(returnPath)
-            path = new Edit[currMaxNonOverlap * 2 + text.length() + 1][pattern.length() + 1];
+            path = new Edit[startMaxNonOverlap + endMaxNonOverlap + text.length() + 1][pattern.length() + 1];
 
         int currFullScoreThreshold = scoreThreshold.get(pattern.length());
 
         List<FuzzyMatch> matches = new ArrayList<>();
 
-        for(int i = 0; i <= currMaxNonOverlap * 2 + text.length(); i++){
+        for(int i = 0; i <= startMaxNonOverlap + endMaxNonOverlap + text.length(); i++){
             dp[i][0] = 0;
             start[i][0] = i;
             if(returnPath)
@@ -99,26 +110,26 @@ public class CutoffSearcher{
 
         int prevLast = last;
 
-        for(int i = 1; i <= currMaxNonOverlap * 2 + text.length(); i++){
+        for(int i = 1; i <= startMaxNonOverlap + endMaxNonOverlap + text.length(); i++){
             for(int j = 1; j <= last; j++){
-                if(i <= currMaxNonOverlap || i > text.length() + currMaxNonOverlap ||
-                        Utils.equalsWildcard(text, i - 1 - currMaxNonOverlap, textEscapeIdx, pattern, j - 1, patternEscapeIdx, wildcardChars)){
+                if(i <= startMaxNonOverlap || i > text.length() + startMaxNonOverlap ||
+                        Utils.equalsWildcard(text, i - 1 - startMaxNonOverlap, textEscapeIdx, pattern, j - 1, patternEscapeIdx, wildcardChars)){
                     dp[i][j] = Utils.addInt(dp[i - 1][j - 1], editWeights.get(pattern.charAt(j - 1), Edit.Type.SAME));
                     start[i][j] = start[i - 1][j - 1];
                     if(returnPath)
                         path[i][j] = new Edit.Same(pattern.charAt(j - 1));
                 }else{
                     int sub = Utils.addInt(dp[i - 1][j - 1],
-                        editWeights.get(pattern.charAt(j - 1), text.charAt(i - 1 - currMaxNonOverlap), Edit.Type.SUB));
+                        editWeights.get(pattern.charAt(j - 1), text.charAt(i - 1 - startMaxNonOverlap), Edit.Type.SUB));
                     int ins = j > prevLast ? Integer.MAX_VALUE : Utils.addInt(dp[i - 1][j],
-                            editWeights.get(text.charAt(i - 1 - currMaxNonOverlap), Edit.Type.INS));
+                            editWeights.get(text.charAt(i - 1 - startMaxNonOverlap), Edit.Type.INS));
                     int del = Utils.addInt(dp[i][j - 1],
                         editWeights.get(pattern.charAt(j - 1), Edit.Type.DEL));
                     int tra = Integer.MAX_VALUE;
 
-                    if(allowTranspositions && j > 1 && i > 1 + currMaxNonOverlap && i <= text.length() + currMaxNonOverlap &&
-                            Utils.equalsWildcard(text, i - 1 - currMaxNonOverlap, textEscapeIdx, pattern, j - 2, patternEscapeIdx, wildcardChars) &&
-                            Utils.equalsWildcard(text, i - 2 - currMaxNonOverlap, textEscapeIdx, pattern, j - 1, patternEscapeIdx, wildcardChars)){
+                    if(allowTranspositions && j > 1 && i > 1 + startMaxNonOverlap && i <= text.length() + startMaxNonOverlap &&
+                            Utils.equalsWildcard(text, i - 1 - startMaxNonOverlap, textEscapeIdx, pattern, j - 2, patternEscapeIdx, wildcardChars) &&
+                            Utils.equalsWildcard(text, i - 2 - startMaxNonOverlap, textEscapeIdx, pattern, j - 1, patternEscapeIdx, wildcardChars)){
                         tra = Utils.addInt(dp[i - 2][j - 2],
                             editWeights.get(pattern.charAt(j - 2), pattern.charAt(j - 1), Edit.Type.TRA));
                     }
@@ -127,12 +138,12 @@ public class CutoffSearcher{
                         dp[i][j] = sub;
                         start[i][j] = start[i - 1][j - 1];
                         if(returnPath)
-                            path[i][j] = new Edit.Substitute(pattern.charAt(j - 1), text.charAt(i - 1 - currMaxNonOverlap));
+                            path[i][j] = new Edit.Substitute(pattern.charAt(j - 1), text.charAt(i - 1 - startMaxNonOverlap));
                     }else if(ins <= sub && ins <= del && ins <= tra){
                         dp[i][j] = ins;
                         start[i][j] = start[i - 1][j];
                         if(returnPath)
-                            path[i][j] = new Edit.Insert(text.charAt(i - 1 - currMaxNonOverlap));
+                            path[i][j] = new Edit.Insert(text.charAt(i - 1 - startMaxNonOverlap));
                     }else if(del <= sub && del <= ins && del <= tra){
                         dp[i][j] = del;
                         start[i][j] = start[i][j - 1];
@@ -156,8 +167,8 @@ public class CutoffSearcher{
 
             if(last == pattern.length()){
                 int score = dp[i][last];
-                int index = i - 1 - currMaxNonOverlap;
-                int nonOverlapLength = Math.max(currMaxNonOverlap - start[i][last], 0) + Math.max(index + 1 - text.length(), 0);
+                int index = i - 1 - startMaxNonOverlap;
+                int nonOverlapLength = Math.max(startMaxNonOverlap - start[i][last], 0) + Math.max(index + 1 - text.length(), 0);
                 int overlapLength = pattern.length() - nonOverlapLength;
                 int currPartialScoreThreshold = scoreThreshold.get(overlapLength);
 
