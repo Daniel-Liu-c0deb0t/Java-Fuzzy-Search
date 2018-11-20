@@ -3,14 +3,14 @@ package javafuzzysearch.utils;
 import java.util.List;
 
 public class FuzzyMatch{
-    private int index, length;
-    private int edits;
+    private int index, overlap, length, score;
     private List<Edit> path;
 
-    public FuzzyMatch(int index, int length, int edits){
+    public FuzzyMatch(int index, int length, int overlap, int score){
         this.index = index;
         this.length = length;
-        this.edits = edits;
+        this.overlap = overlap;
+        this.score = score;
     }
 
     public void setPath(List<Edit> path){
@@ -25,8 +25,12 @@ public class FuzzyMatch{
         return length;
     }
 
-    public int getEdits(){
-        return edits;
+    public int getOverlap(){
+        return overlap;
+    }
+
+    public int getScore(){
+        return score;
     }
     
     public List<Edit> getPath(){
@@ -35,6 +39,6 @@ public class FuzzyMatch{
 
     @Override
     public String toString(){
-        return String.format("FuzzyMatch(index = %d, length = %d, edits = %d)", index, length, edits);
+        return String.format("FuzzyMatch(index = %d, length = %d, overlap = %d, score = %d)", index, length, overlap, score);
     }
 }

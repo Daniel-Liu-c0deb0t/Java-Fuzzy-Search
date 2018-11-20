@@ -21,7 +21,7 @@ public class CutoffSearcher{
     private LengthParam scoreThreshold = new LengthParam(0, false, false);
     private LengthParam minOverlap = new LengthParam(0, false, true);
     private EditWeights editWeights = new EditWeights();
-    private boolean allowTranspositions = false, useMinOverlap = false, maximizeScore = false;
+    private boolean allowTranspositions = false, maximizeScore = false;
     private Map<Character, Set<Character>> wildcardChars = new HashMap<>();
 
     public CutoffSearcher scoreThreshold(LengthParam scoreThreshold){
@@ -31,7 +31,6 @@ public class CutoffSearcher{
 
     public CutoffSearcher minOverlap(LengthParam minOverlap){
         this.minOverlap = minOverlap;
-        this.useMinOverlap = true;
         return this;
     }
 
@@ -60,9 +59,8 @@ public class CutoffSearcher{
     }
 
     public List<FuzzyMatch> search(String text, String pattern, boolean returnPath, Set<Integer> textEscapeIdx, Set<Integer> patternEscapeIdx){
-        if(pattern.isEmpty()){
+        if(pattern.isEmpty())
             return new ArrayList<FuzzyMatch>();
-        }
 
         int currMinOverlap = minOverlap.get(pattern.length());
         int currMaxNonOverlap = pattern.length() - currMinOverlap;
@@ -157,15 +155,15 @@ public class CutoffSearcher{
             }
 
             if(last == pattern.length()){
-                int dist = dp[i][last];
+                int score = dp[i][last];
                 int index = i - 1 - currMaxNonOverlap;
-                int length = Math.min(index + 1, Math.min(i - start[i][last], currMaxNonOverlap + text.length() - start[i][last]));
-                int currPartialScoreThreshold = scoreThreshold.get(length);
+                int nonOverlapLength = Math.max(currMaxNonOverlap - start[i][last], 0) + Math.max(index + 1 - text.length(), 0);
+                int overlapLength = pattern.length() - nonOverlapLength;
+                int currPartialScoreThreshold = scoreThreshold.get(overlapLength);
 
-                if(((maximizeScore && dist >= currPartialScoreThreshold) ||
-                            (!maximizeScore && dist <= currPartialScoreThreshold))
-                        && (!useMinOverlap || length >= currMinOverlap)){
-                    FuzzyMatch m = new FuzzyMatch(index, useMinOverlap ? length : (i - start[i][last]), dist);
+                if(((maximizeScore && score >= currPartialScoreThreshold) ||
+                            (!maximizeScore && score <= currPartialScoreThreshold)) && overlapLength >= currMinOverlap){
+                    FuzzyMatch m = new FuzzyMatch(index, i - start[i][last], overlapLength, score);
 
                     if(returnPath){
                         List<Edit> pathList = new ArrayList<>();

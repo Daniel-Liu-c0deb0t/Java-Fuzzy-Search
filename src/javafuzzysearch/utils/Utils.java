@@ -41,7 +41,7 @@ public class Utils{
 
         return c == d ||
             (!aEscapeIdx.contains(aIdx) && wildcardChars.containsKey(c) && (wildcardChars.get(c) == null || wildcardChars.get(c).contains(d))) ||
-            (!bEscapeIdx.contains(bIdx) && wildcardChars.containsKey(d) && (wildcardChars.get(c) == null || wildcardChars.get(d).contains(c)));
+            (!bEscapeIdx.contains(bIdx) && wildcardChars.containsKey(d) && (wildcardChars.get(d) == null || wildcardChars.get(d).contains(c)));
     }
 
     public static boolean equalsWildcard(String s, Set<Integer> escapeIdx, int aIdx, int bIdx, Map<Character, Set<Character>> wildcardChars){

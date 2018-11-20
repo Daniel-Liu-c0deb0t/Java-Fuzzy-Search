@@ -10,21 +10,21 @@ public class MyersTest{
         MyersSearcher s1 = new MyersSearcher();
         
         t.testStrEquals(s1.search("hello world", "hello"),
-                        "[FuzzyMatch(index = 4, length = 5, edits = 0)]");
+                        "[FuzzyMatch(index = 4, length = 5, overlap = 5, score = 0)]");
         
         t.testStrEquals(s1.search("hello hello", "hello"),
-                        "[FuzzyMatch(index = 4, length = 5, edits = 0), FuzzyMatch(index = 10, length = 5, edits = 0)]");
+                        "[FuzzyMatch(index = 4, length = 5, overlap = 5, score = 0), FuzzyMatch(index = 10, length = 5, overlap = 5, score = 0)]");
         
         MyersSearcher s2 = new MyersSearcher().maxEdits(new LengthParam(1));
         
         t.testStrEquals(s2.search("?ello world", "hello"),
-                        "[FuzzyMatch(index = 4, length = 5, edits = 1)]");
+                        "[FuzzyMatch(index = 4, length = 5, overlap = 5, score = 1)]");
         
         t.testStrEquals(s2.search("helo world", "hello"),
-                        "[FuzzyMatch(index = 3, length = 5, edits = 1)]");
+                        "[FuzzyMatch(index = 3, length = 5, overlap = 5, score = 1)]");
         
         t.testStrEquals(s2.search("helllo world", "hello"),
-                        "[FuzzyMatch(index = 3, length = 5, edits = 1), FuzzyMatch(index = 4, length = 5, edits = 1), FuzzyMatch(index = 5, length = 5, edits = 1)]");
+                        "[FuzzyMatch(index = 3, length = 5, overlap = 5, score = 1), FuzzyMatch(index = 4, length = 5, overlap = 5, score = 1), FuzzyMatch(index = 5, length = 5, overlap = 5, score = 1)]");
         
         t.testStrEquals(s2.search("what the", "hello"),
                         "[]");
@@ -32,6 +32,6 @@ public class MyersTest{
         MyersSearcher s3 = new MyersSearcher().maxEdits(new LengthParam(1)).allowTranspositions();
 
         t.testStrEquals(s3.search("ehllo world", "hello"),
-                        "[FuzzyMatch(index = 4, length = 5, edits = 1)]");
+                        "[FuzzyMatch(index = 4, length = 5, overlap = 5, score = 1)]");
     }
 }

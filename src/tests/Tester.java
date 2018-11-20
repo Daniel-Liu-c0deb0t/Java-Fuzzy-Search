@@ -16,7 +16,7 @@ public class Tester{
         if(s1.equals(s2))
             res = String.format("PASSED \"%s\"", s1);
         else
-            res = String.format("FAILED \"%s\" != \"%s\"", s1, s2);
+            res = String.format("*** FAILED \"%s\" != \"%s\"", s1, s2);
         
         System.out.println(String.format("TEST %d %s", counter, res));
         

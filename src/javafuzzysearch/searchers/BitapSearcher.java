@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Implementation of the Bitap fuzzy searching algorithm for Hamming distance.
@@ -17,6 +18,7 @@ import java.util.Set;
 public class BitapSearcher{
     private LengthParam maxEdits = new LengthParam(0, false, false);
     private LengthParam minOverlap = new LengthParam(0, false, true);
+    private Map<Character, Set<Character>> wildcardChars = new HashMap<>();
 
     public BitapSearcher maxEdits(LengthParam maxEdits){
         this.maxEdits = maxEdits;
@@ -28,25 +30,58 @@ public class BitapSearcher{
         return this;
     }
 
-    public Map<Character, BitVector> preprocessPattern(String pattern, Set<Character> alphabet){
-        Map<Character, BitVector> res = new HashMap<>();
-        
-        for(char a : alphabet){
-            res.put(a, new BitVector(pattern.length() + 1));
+    public BitapSearcher wildcardChars(Map<Character, Set<Character>> wildcardChars){
+        this.wildcardChars = wildcardChars;
+        return this;
+    }
+
+    public Map<Boolean, Map<Character, BitVector>> preprocessPattern(String pattern, Set<Character> alphabet, Set<Integer> patternEscapeIdx){
+        Map<Boolean, Map<Character, BitVector>> res = new HashMap<>();
+
+        Map<Character, BitVector> normalMasks = new HashMap<>();
+        Map<Character, BitVector> wildcardMasks = new HashMap<>();
+
+        for(char c : alphabet){
+            normalMasks.put(c, new BitVector(pattern.length() + 1));
+            if(wildcardChars.containsKey(c))
+                wildcardMasks.put(c, new BitVector(pattern.length() + 1));
         }
-        
+
         for(int i = 0; i < pattern.length(); i++){
-            res.get(pattern.charAt(i)).set(i);
+            char c = pattern.charAt(i);
+            normalMasks.get(c).set(i);
+
+            if(wildcardChars.containsKey(c) && !patternEscapeIdx.contains(i)){
+                Set<Character> set;
+
+                if(wildcardChars.get(c) == null)
+                    set = alphabet;
+                else
+                    set = wildcardChars.get(c);
+
+                for(char d : set){
+                    normalMasks.get(d).set(i);
+                }
+            }
+
+            for(char wildcard : wildcardChars.keySet()){
+                Set<Character> set = wildcardChars.get(wildcard);
+                if(set == null || set.contains(c))
+                    wildcardMasks.get(wildcard).set(i);
+            }
         }
-        
+
+        res.put(false, normalMasks);
+        res.put(true, wildcardMasks);
+
         return res;
     }
 
     public List<FuzzyMatch> search(String text, String pattern){
-        return search(text, pattern, preprocessPattern(pattern, Utils.uniqueChars(text, pattern)));
+        return search(text, pattern, preprocessPattern(pattern, Utils.uniqueChars(text, pattern), new HashSet<Integer>()), new HashSet<Integer>());
     }
 
-    public List<FuzzyMatch> search(String text, String pattern, Map<Character, BitVector> patternIdx){
+    public List<FuzzyMatch> search(String text, String pattern, Map<Boolean, Map<Character, BitVector>> patternMask, Set<Integer> textEscapeIdx){
         if(pattern.isEmpty())
             return new ArrayList<FuzzyMatch>();
         
@@ -69,13 +104,19 @@ public class BitapSearcher{
             
             for(int j = 0; j <= currFullMaxEdits; j++){
                 if(j == 0){
-                    if(i >= currMaxNonOverlap && i < currMaxNonOverlap + text.length())
-                        r[0].and(patternIdx.get(text.charAt(i - currMaxNonOverlap)));
+                    if(i >= currMaxNonOverlap && i < currMaxNonOverlap + text.length()){
+                        int idx = i - currMaxNonOverlap;
+                        r[0].and(patternMask.get(wildcardChars.containsKey(text.charAt(idx)) &&
+                                    !textEscapeIdx.contains(idx)).get(text.charAt(idx)));
+                    }
                 }else{
                     BitVector temp = new BitVector(pattern.length() + 1).or(r[j]);
                     
-                    if(i >= currMaxNonOverlap && i < currMaxNonOverlap + text.length())
-                        r[j].and(patternIdx.get(text.charAt(i - currMaxNonOverlap)));
+                    if(i >= currMaxNonOverlap && i < currMaxNonOverlap + text.length()){
+                        int idx = i - currMaxNonOverlap;
+                        r[j].and(patternMask.get(wildcardChars.containsKey(text.charAt(idx)) &&
+                                    !textEscapeIdx.contains(idx)).get(text.charAt(idx)));
+                    }
                     
                     r[j].or(old);
                     
@@ -86,11 +127,12 @@ public class BitapSearcher{
                 
                 if(!found && r[j].get(pattern.length())){
                     int index = i - currMaxNonOverlap;
-                    int length = Math.min(index + 1, Math.min(pattern.length(), text.length() - (index + 1 - pattern.length())));
-                    int currPartialMaxEdits = maxEdits.get(length);
-                    
-                    if(j <= currPartialMaxEdits && length >= currMinOverlap){
-                        matches.add(new FuzzyMatch(index, length, j));
+                    int nonOverlapLength = Math.max(pattern.length() - index - 1, 0) + Math.max(index + 1 - text.length(), 0);
+                    int overlapLength = pattern.length() - nonOverlapLength;
+                    int currPartialMaxEdits = maxEdits.get(overlapLength);
+
+                    if(j <= currPartialMaxEdits && overlapLength >= currMinOverlap){
+                        matches.add(new FuzzyMatch(index, pattern.length(), overlapLength, j));
                     }
                     
                     found = true;

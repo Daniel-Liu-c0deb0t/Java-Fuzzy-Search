@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Implementation of Myer's fuzzy searching algorithm for Levenshtein distance.
@@ -17,7 +18,8 @@ import java.util.Set;
 public class MyersSearcher{
     private LengthParam maxEdits = new LengthParam(0, false, false);
     private LengthParam minOverlap = new LengthParam(0, false, true);
-    private boolean allowTranspositions = false, useMinOverlap = false;
+    private boolean allowTranspositions = false;
+    private Map<Character, Set<Character>> wildcardChars = new HashMap<>();
 
     public MyersSearcher maxEdits(LengthParam maxEdits){
         this.maxEdits = maxEdits;
@@ -26,7 +28,6 @@ public class MyersSearcher{
 
     public MyersSearcher minOverlap(LengthParam minOverlap){
         this.minOverlap = minOverlap;
-        this.useMinOverlap = true;
         return this;
     }
 
@@ -35,25 +36,58 @@ public class MyersSearcher{
         return this;
     }
 
-    public Map<Character, BitVector> preprocessPattern(String pattern, Set<Character> alphabet){
-        Map<Character, BitVector> res = new HashMap<>();
-        
-        for(char a : alphabet){
-            res.put(a, new BitVector(pattern.length()));
+    public MyersSearcher wildcardChars(Map<Character, Set<Character>> wildcardChars){
+        this.wildcardChars = wildcardChars;
+        return this;
+    }
+
+    public Map<Boolean, Map<Character, BitVector>> preprocessPattern(String pattern, Set<Character> alphabet, Set<Integer> patternEscapeIdx){
+        Map<Boolean, Map<Character, BitVector>> res = new HashMap<>();
+
+        Map<Character, BitVector> normalMasks = new HashMap<>();
+        Map<Character, BitVector> wildcardMasks = new HashMap<>();
+
+        for(char c : alphabet){
+            normalMasks.put(c, new BitVector(pattern.length()));
+            if(wildcardChars.containsKey(c))
+                wildcardMasks.put(c, new BitVector(pattern.length()));
         }
-        
+
         for(int i = 0; i < pattern.length(); i++){
-            res.get(pattern.charAt(i)).set(i);
+            char c = pattern.charAt(i);
+            normalMasks.get(c).set(i);
+
+            if(wildcardChars.containsKey(c) && !patternEscapeIdx.contains(i)){
+                Set<Character> set;
+
+                if(wildcardChars.get(c) == null)
+                    set = alphabet;
+                else
+                    set = wildcardChars.get(c);
+
+                for(char d : set){
+                    normalMasks.get(d).set(i);
+                }
+            }
+
+            for(char wildcard : wildcardChars.keySet()){
+                Set<Character> set = wildcardChars.get(wildcard);
+                if(set == null || set.contains(c))
+                    wildcardMasks.get(wildcard).set(i);
+            }
         }
-        
+
+        res.put(false, normalMasks);
+        res.put(true, wildcardMasks);
+
         return res;
     }
-    
+
     public List<FuzzyMatch> search(String text, String pattern){
-        return search(text, pattern, preprocessPattern(pattern, Utils.uniqueChars(text, pattern)));
+        return search(text, pattern, preprocessPattern(pattern, Utils.uniqueChars(text, pattern), new HashSet<Integer>()), new HashSet<Integer>());
     }
-    
-    public List<FuzzyMatch> search(String text, String pattern, Map<Character, BitVector> patternIdx){
+
+    public List<FuzzyMatch> search(String text, String pattern, Map<Boolean, Map<Character, BitVector>> patternMask, Set<Integer> textEscapeIdx){
         if(pattern.isEmpty())
             return new ArrayList<FuzzyMatch>();
         
@@ -70,17 +104,19 @@ public class MyersSearcher{
         
         List<FuzzyMatch> matches = new ArrayList<>();
         
-        for(int i = 0; i < currMaxNonOverlap * 2 + text.length(); i++){
+        for(int i = 0; i < currMaxNonOverlap + text.length(); i++){
             BitVector m;
-            if(i >= currMaxNonOverlap && i < currMaxNonOverlap + text.length())
-                m = patternIdx.get(text.charAt(i - currMaxNonOverlap));
-            else
+            if(i < text.length()){
+                m = patternMask.get(wildcardChars.containsKey(text.charAt(i)) &&
+                        !textEscapeIdx.contains(i)).get(text.charAt(i));
+            }else{
                 m = allSet;
+            }
             
             BitVector tr = null;
             if(allowTranspositions){
                 tr = new BitVector(pattern.length());
-                if(i != 0)
+                if(i > 0)
                     tr = tr.or(prevD0).not().and(m).leftShift().and(prevM);
             }
             BitVector d0 = new BitVector(pattern.length()).or(m).and(vp).add(vp).xor(vp).or(m).or(vn);
@@ -104,12 +140,12 @@ public class MyersSearcher{
                 dist--;
             }
             
-            int index = i - currMaxNonOverlap;
-            int length = Math.min(index + 1, Math.min(pattern.length(), text.length() - (index + 1 - pattern.length())));
-            int currPartialMaxEdits = maxEdits.get(length);
+            int nonOverlapLength = Math.max(i + 1 - text.length(), 0);
+            int overlapLength = pattern.length() - nonOverlapLength;
+            int currPartialMaxEdits = maxEdits.get(overlapLength);
             
-            if(dist <= currPartialMaxEdits && (!useMinOverlap || length >= currMinOverlap)){
-                matches.add(new FuzzyMatch(index, useMinOverlap ? length : pattern.length(), dist));
+            if(dist <= currPartialMaxEdits && overlapLength >= currMinOverlap){
+                matches.add(new FuzzyMatch(i, pattern.length(), overlapLength, dist));
             }
         }
         
