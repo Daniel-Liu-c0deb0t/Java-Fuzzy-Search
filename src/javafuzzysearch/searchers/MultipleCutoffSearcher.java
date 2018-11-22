@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Collections;
 
 import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.Edit;
@@ -19,7 +20,7 @@ import javafuzzysearch.utils.Array2D;
 /**
  * Implementation of vanilla DP with Ukkonen's cutoff algorithm for computing Levenshtein distance.
  */
-public class TrieCutoffSearcher{
+public class MultipleCutoffSearcher{
     private LengthParam scoreThreshold = new LengthParam(0, false, false);
     private int maxNonOverlap = 0;
     private EditWeights editWeights = new EditWeights();
@@ -27,39 +28,89 @@ public class TrieCutoffSearcher{
     private Map<Character, Set<Character>> wildcardChars = new HashMap<>();
     private Location nonOverlapLocation = Location.ANY;
 
-    public TrieCutoffSearcher scoreThreshold(LengthParam scoreThreshold){
+    public MultipleCutoffSearcher scoreThreshold(LengthParam scoreThreshold){
         this.scoreThreshold = scoreThreshold;
         return this;
     }
 
-    public TrieCutoffSearcher maxNonOverlap(int maxNonOverlap, Location nonOverlapLocation){
+    public MultipleCutoffSearcher maxNonOverlap(int maxNonOverlap, Location nonOverlapLocation){
         this.maxNonOverlap = maxNonOverlap;
         this.nonOverlapLocation = nonOverlapLocation;
         return this;
     }
 
-    public TrieCutoffSearcher allowTranspositions(){
+    public MultipleCutoffSearcher allowTranspositions(){
         this.allowTranspositions = true;
         return this;
     }
 
-    public TrieCutoffSearcher editWeights(EditWeights editWeights){
+    public MultipleCutoffSearcher editWeights(EditWeights editWeights){
         this.editWeights = editWeights;
         return this;
     }
 
-    public TrieCutoffSearcher maximizeScore(){
+    public MultipleCutoffSearcher maximizeScore(){
         this.maximizeScore = true;
         return this;
     }
 
-    public TrieCutoffSearcher wildcardChars(Map<Character, Set<Character>> wildcardChars){
+    public MultipleCutoffSearcher wildcardChars(Map<Character, Set<Character>> wildcardChars){
         this.wildcardChars = wildcardChars;
         return this;
     }
 
-    public List<FuzzyMatch> search(String text, String pattern, Array2D<Integer> dp, Array2D<Integer> start,
-            Array2D<Edit> path, boolean returnPath, Set<Integer> textEscapeIdx, Set<Integer> patternEscapeIdx){
+    public List<List<FuzzyMatch>> search(String text, List<String> patterns, boolean returnPath){
+        List<Set<Integer>> empty = new ArrayList<>();
+
+        for(int i = 0; i < patterns.size(); i++)
+            empty.add(new HashSet<Integer>());
+
+        return search(text, patterns, returnPath, new HashSet<Integer>(), empty);
+    }
+
+    private Array2D<Integer> dp;
+    private Array2D<Integer> start;
+    private Array2D<Edit> path;
+
+    public List<List<FuzzyMatch>> search(String text, List<String> patterns, boolean returnPath, Set<Integer> textEscapeIdx, List<Set<Integer>> patternEscapeIdx){
+        List<PatternEscape> patternEscapePairs = new ArrayList<>();
+
+        for(int i = 0; i < patterns.size(); i++)
+            patternEscapePairs.add(new PatternEscape(patterns.get(i), patternEscapeIdx.get(i), i));
+
+        Collections.sort(patternEscapePairs, (a, b) -> a.pattern.compareTo(b.pattern));
+
+        List<List<FuzzyMatch>> matches = new ArrayList<>(patternEscapePairs.size());
+
+        for(int i = 0; i < patternEscapePairs.size(); i++)
+            matches.add(null);
+
+        dp = null;
+        start = null;
+        path = null;
+
+        for(int i = 0; i < patternEscapePairs.size(); i++){
+            PatternEscape curr = patternEscapePairs.get(i);
+            matches.set(curr.idx, search(text, curr.pattern, returnPath, textEscapeIdx, curr.escapeIdx));
+            
+            if(i < patternEscapePairs.size() - 1){
+                int length = curr.pattern.length();
+                int lcp = Utils.longestCommonPrefix(curr.pattern, patternEscapePairs.get(i + 1).pattern);
+
+                while(length > lcp){
+                    dp.pop(length);
+                    start.pop(length);
+                    path.pop(length);
+
+                    length--;
+                }
+            }
+        }
+
+        return matches;
+    }
+
+    private List<FuzzyMatch> search(String text, String pattern, boolean returnPath, Set<Integer> textEscapeIdx, Set<Integer> patternEscapeIdx){
         if(pattern.isEmpty())
             return new ArrayList<FuzzyMatch>();
 
@@ -77,7 +128,7 @@ public class TrieCutoffSearcher{
 
         List<FuzzyMatch> matches = new ArrayList<>();
 
-        if(dp == null || start == null || path == null){
+        if(dp == null || start == null || (returnPath && path == null)){
             dp = new Array2D<>(startMaxNonOverlap + endMaxNonOverlap + text.length() + 1);
             start = new Array2D<>(startMaxNonOverlap + endMaxNonOverlap + text.length() + 1);
             path = null;
@@ -199,5 +250,17 @@ public class TrieCutoffSearcher{
         }
 
         return matches;
+    }
+
+    private static class PatternEscape{
+        String pattern;
+        Set<Integer> escapeIdx;
+        int idx;
+
+        public PatternEscape(String pattern, Set<Integer> escapeIdx, int idx){
+            this.pattern = pattern;
+            this.escapeIdx = escapeIdx;
+            this.idx = idx;
+        }
     }
 }

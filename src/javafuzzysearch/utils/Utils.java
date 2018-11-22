@@ -52,4 +52,15 @@ public class Utils{
             (!escapeIdx.contains(aIdx) && wildcardChars.containsKey(a) && (wildcardChars.get(a) == null || wildcardChars.get(a).contains(b))) ||
             (!escapeIdx.contains(bIdx) && wildcardChars.containsKey(b) && (wildcardChars.get(b) == null || wildcardChars.get(b).contains(a)));
     }
+
+    public static int longestCommonPrefix(String a, String b){
+        int length = Math.min(a.length(), b.length());
+        
+        for(int i = 0; i < length; i++){
+            if(a.charAt(i) != b.charAt(i))
+                return i;
+        }
+
+        return length;
+    }
 }
