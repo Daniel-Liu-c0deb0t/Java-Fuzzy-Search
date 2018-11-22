@@ -7,6 +7,10 @@ import javafuzzysearch.utils.EditWeights;
 import javafuzzysearch.utils.Location;
 
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
 
 public class CutoffTest{
     public static void main(String[] args){
@@ -51,5 +55,18 @@ public class CutoffTest{
 
         t.testStrEquals(s4.search("helo world", "hello", false),
                         "[FuzzyMatch(index = 3, length = 4, overlap = 5, score = 2), FuzzyMatch(index = 4, length = 5, overlap = 5, score = 2)]");
+
+        Map<Character, Set<Character>> wildcards = new HashMap<>();
+        Set<Character> set = new HashSet<>();
+        set.add('e');
+        wildcards.put('*', set);
+
+        CutoffSearcher s5 = new CutoffSearcher().wildcardChars(wildcards);
+
+        t.testStrEquals(s5.search("h*llo world", "hello", false),
+                        "[FuzzyMatch(index = 4, length = 5, overlap = 5, score = 0)]");
+
+        t.testStrEquals(s5.search("h**lo world", "hello", false),
+                        "[]");
     }
 }

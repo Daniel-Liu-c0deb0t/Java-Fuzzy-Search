@@ -4,7 +4,9 @@ public class Tester{
     private int counter;
     
     public Tester(String s){
+        System.out.println();
         System.out.println(s);
+        System.out.println();
         counter = 0;
     }
     

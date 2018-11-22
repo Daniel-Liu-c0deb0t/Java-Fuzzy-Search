@@ -3,6 +3,11 @@ package tests;
 import javafuzzysearch.searchers.MyersSearcher;
 import javafuzzysearch.utils.LengthParam;
 
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
+
 public class MyersTest{
     public static void main(String[] args){
         Tester t = new Tester("Myer's Algorithm Test");
@@ -38,5 +43,18 @@ public class MyersTest{
 
         t.testStrEquals(s4.search("hello woorl", "world"),
                         "[FuzzyMatch(index = 11, length = 5, overlap = 4, score = 1)]");
+
+        Map<Character, Set<Character>> wildcards = new HashMap<>();
+        Set<Character> set = new HashSet<>();
+        set.add('e');
+        wildcards.put('*', set);
+
+        MyersSearcher s5 = new MyersSearcher().wildcardChars(wildcards);
+
+        t.testStrEquals(s5.search("h*llo world", "hello"),
+                        "[FuzzyMatch(index = 4, length = 5, overlap = 5, score = 0)]");
+
+        t.testStrEquals(s5.search("h**lo world", "hello"),
+                        "[]");
     }
 }
