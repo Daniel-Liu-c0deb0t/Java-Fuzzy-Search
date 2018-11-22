@@ -33,5 +33,10 @@ public class MyersTest{
 
         t.testStrEquals(s3.search("ehllo world", "hello"),
                         "[FuzzyMatch(index = 4, length = 5, overlap = 5, score = 1)]");
+
+        MyersSearcher s4 = new MyersSearcher().maxEdits(new LengthParam(1)).minOverlap(new LengthParam(1, false, true));
+
+        t.testStrEquals(s4.search("hello woorl", "world"),
+                        "[FuzzyMatch(index = 11, length = 5, overlap = 4, score = 1)]");
     }
 }

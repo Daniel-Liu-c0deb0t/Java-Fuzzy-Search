@@ -9,7 +9,7 @@ A fast and flexible Java fuzzy search library. The goal is to focus on doing one
 - Support for wildcard characters for all fuzzy string matching algorithms
 - Support for different edit weights/scores with Ukkonen's cutoff algorithm
 - Partial overlap between text and search pattern with fuzzy search
+- Stateful DP with Ukkonen's cutoff algorithm for multiple patterns (works well with patterns that share prefixes)
 
 ## Planned Features
-- Trie speedup for Ukkonen's cutoff
 - Fuzzy grep command line tool

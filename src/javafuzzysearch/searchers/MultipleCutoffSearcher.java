@@ -18,7 +18,7 @@ import javafuzzysearch.utils.Location;
 import javafuzzysearch.utils.Array2D;
 
 /**
- * Implementation of vanilla DP with Ukkonen's cutoff algorithm for computing Levenshtein distance.
+ * Implementation of stateful DP between multiple patterns and Ukkonen's cutoff algorithm for computing Levenshtein distance.
  */
 public class MultipleCutoffSearcher{
     private LengthParam scoreThreshold = new LengthParam(0, false, false);
@@ -100,7 +100,8 @@ public class MultipleCutoffSearcher{
                 while(length > lcp){
                     dp.pop(length);
                     start.pop(length);
-                    path.pop(length);
+                    if(returnPath)
+                        path.pop(length);
 
                     length--;
                 }
