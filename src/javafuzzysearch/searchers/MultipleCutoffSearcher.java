@@ -47,7 +47,7 @@ public class MultipleCutoffSearcher{
 
     public MultipleCutoffSearcher editWeights(EditWeights editWeights){
         this.editWeights = editWeights;
-        useCutoff = editWeights.diagonalMonotonic();
+        useCutoff = editWeights.isDiagonalMonotonic();
         return this;
     }
 
@@ -61,20 +61,7 @@ public class MultipleCutoffSearcher{
         return this;
     }
 
-    public List<List<FuzzyMatch>> search(String text, List<String> patterns, boolean returnPath){
-        List<Set<Integer>> empty = new ArrayList<>();
-
-        for(int i = 0; i < patterns.size(); i++)
-            empty.add(new HashSet<Integer>());
-
-        return search(text, patterns, returnPath, new HashSet<Integer>(), empty);
-    }
-
-    private Array2D<Integer> dp;
-    private Array2D<Integer> start;
-    private Array2D<Edit> path;
-
-    public List<List<FuzzyMatch>> search(String text, List<String> patterns, boolean returnPath, Set<Integer> textEscapeIdx, List<Set<Integer>> patternEscapeIdx){
+    public List<PatternEscape> preprocessPatterns(List<String> patterns, List<Set<Integer>> patternEscapeIdx){
         List<PatternEscape> patternEscapePairs = new ArrayList<>();
 
         for(int i = 0; i < patterns.size(); i++)
@@ -82,6 +69,28 @@ public class MultipleCutoffSearcher{
 
         Collections.sort(patternEscapePairs, (a, b) -> a.pattern.compareTo(b.pattern));
 
+        for(int i = 0; i < patternEscapePairs.size() - 1; i++){
+            PatternEscape curr = patternEscapePairs.get(i);
+            curr.lcp = Utils.longestCommonPrefix(curr.pattern, patternEscapePairs.get(i + 1).pattern);
+        }
+
+        return patternEscapePairs;
+    }
+
+    public List<List<FuzzyMatch>> search(String text, List<String> patterns, boolean returnPath){
+        List<Set<Integer>> empty = new ArrayList<>();
+
+        for(int i = 0; i < patterns.size(); i++)
+            empty.add(new HashSet<Integer>());
+
+        return search(text, preprocessPatterns(patterns, empty), returnPath, new HashSet<Integer>());
+    }
+
+    private Array2D<Integer> dp;
+    private Array2D<Integer> start;
+    private Array2D<Edit> path;
+
+    public List<List<FuzzyMatch>> search(String text, List<PatternEscape> patternEscapePairs, boolean returnPath, Set<Integer> textEscapeIdx){
         List<List<FuzzyMatch>> matches = new ArrayList<>(patternEscapePairs.size());
 
         for(int i = 0; i < patternEscapePairs.size(); i++)
@@ -94,12 +103,11 @@ public class MultipleCutoffSearcher{
         for(int i = 0; i < patternEscapePairs.size(); i++){
             PatternEscape curr = patternEscapePairs.get(i);
             matches.set(curr.idx, search(text, curr.pattern, returnPath, textEscapeIdx, curr.escapeIdx));
-            
+
             if(i < patternEscapePairs.size() - 1){
                 int length = curr.pattern.length();
-                int lcp = Utils.longestCommonPrefix(curr.pattern, patternEscapePairs.get(i + 1).pattern);
 
-                while(length > lcp){
+                while(length > curr.lcp){
                     dp.pop(length);
                     start.pop(length);
                     if(returnPath)
@@ -261,10 +269,10 @@ public class MultipleCutoffSearcher{
         return matches;
     }
 
-    private static class PatternEscape{
+    public static class PatternEscape{
         String pattern;
         Set<Integer> escapeIdx;
-        int idx;
+        int idx, lcp;
 
         public PatternEscape(String pattern, Set<Integer> escapeIdx, int idx){
             this.pattern = pattern;

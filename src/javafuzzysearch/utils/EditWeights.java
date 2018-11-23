@@ -95,7 +95,7 @@ public class EditWeights{
         }
     }
 
-    public boolean diagonalMonotonic(){
+    public boolean isDiagonalMonotonic(){
         boolean[] signs = new boolean[3];
 
         for(Edit.Type key : mapSingle.keySet()){
