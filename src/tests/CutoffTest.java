@@ -68,5 +68,26 @@ public class CutoffTest{
 
         t.testStrEquals(s5.search("h**lo world", "hello", false),
                         "[]");
+
+        Map<Character, Set<Character>> wildcards2 = new HashMap<>();
+        wildcards2.put('*', null);
+
+        CutoffSearcher s6 = new CutoffSearcher().wildcardChars(wildcards2);
+
+        t.testStrEquals(s6.search("h**lo world", "hello", false),
+                        "[FuzzyMatch(index = 4, length = 5, overlap = 5, score = 0)]");
+
+        Set<Integer> idx = new HashSet<>();
+        idx.add(2);
+
+        t.testStrEquals(s6.search("h**lo world", "hello", false, idx, new HashSet<Integer>()),
+                        "[]");
+
+        EditWeights w2 = new EditWeights().setDefault(1, -1, -1, -1);
+
+        CutoffSearcher s7 = new CutoffSearcher().scoreThreshold(new LengthParam(2, false, true)).editWeights(w2).maximizeScore();
+
+        t.testStrEquals(s7.search("hlllo world", "hello", false),
+                        "[FuzzyMatch(index = 4, length = 5, overlap = 5, score = 3)]");
     }
 }

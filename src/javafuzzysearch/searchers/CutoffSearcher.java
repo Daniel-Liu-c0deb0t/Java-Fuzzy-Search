@@ -25,6 +25,7 @@ public class CutoffSearcher{
     private boolean allowTranspositions = false, maximizeScore = false;
     private Map<Character, Set<Character>> wildcardChars = new HashMap<>();
     private Location nonOverlapLocation = Location.ANY;
+    private boolean useCutoff = true;
 
     public CutoffSearcher scoreThreshold(LengthParam scoreThreshold){
         this.scoreThreshold = scoreThreshold;
@@ -44,6 +45,7 @@ public class CutoffSearcher{
 
     public CutoffSearcher editWeights(EditWeights editWeights){
         this.editWeights = editWeights;
+        useCutoff = editWeights.diagonalMonotonic();
         return this;
     }
 
@@ -101,8 +103,8 @@ public class CutoffSearcher{
             if(returnPath)
                 path[0][i] = new Edit.Delete(pattern.charAt(i - 1));
 
-            if((maximizeScore && dp[0][i] < currFullScoreThreshold) ||
-                    (!maximizeScore && dp[0][i] > currFullScoreThreshold)){
+            if(useCutoff && ((maximizeScore && dp[0][i] < currFullScoreThreshold) ||
+                    (!maximizeScore && dp[0][i] > currFullScoreThreshold))){
                 last = i;
                 break;
             }
@@ -119,13 +121,14 @@ public class CutoffSearcher{
                     if(returnPath)
                         path[i][j] = new Edit.Same(pattern.charAt(j - 1));
                 }else{
+                    int inf = maximizeScore ? Integer.MIN_VALUE : Integer.MAX_VALUE;
                     int sub = Utils.addInt(dp[i - 1][j - 1],
                         editWeights.get(pattern.charAt(j - 1), text.charAt(i - 1 - startMaxNonOverlap), Edit.Type.SUB));
-                    int ins = j > prevLast ? Integer.MAX_VALUE : Utils.addInt(dp[i - 1][j],
+                    int ins = j > prevLast ? inf : Utils.addInt(dp[i - 1][j],
                             editWeights.get(text.charAt(i - 1 - startMaxNonOverlap), Edit.Type.INS));
                     int del = Utils.addInt(dp[i][j - 1],
                         editWeights.get(pattern.charAt(j - 1), Edit.Type.DEL));
-                    int tra = Integer.MAX_VALUE;
+                    int tra = inf;
 
                     if(allowTranspositions && j > 1 && i > 1 + startMaxNonOverlap && i <= text.length() + startMaxNonOverlap &&
                             Utils.equalsWildcard(text, i - 1 - startMaxNonOverlap, textEscapeIdx, pattern, j - 2, patternEscapeIdx, wildcardChars) &&
@@ -134,17 +137,20 @@ public class CutoffSearcher{
                             editWeights.get(pattern.charAt(j - 2), pattern.charAt(j - 1), Edit.Type.TRA));
                     }
 
-                    if(sub <= ins && sub <= del && sub <= tra){
+                    if((maximizeScore && sub >= ins && sub >= del && sub >= tra) ||
+                            (!maximizeScore && sub <= ins && sub <= del && sub <= tra)){
                         dp[i][j] = sub;
                         start[i][j] = start[i - 1][j - 1];
                         if(returnPath)
                             path[i][j] = new Edit.Substitute(pattern.charAt(j - 1), text.charAt(i - 1 - startMaxNonOverlap));
-                    }else if(ins <= sub && ins <= del && ins <= tra){
+                    }else if((maximizeScore && ins >= sub && ins >= del && ins >= tra) ||
+                            (!maximizeScore && ins <= sub && ins <= del && ins <= tra)){
                         dp[i][j] = ins;
                         start[i][j] = start[i - 1][j];
                         if(returnPath)
                             path[i][j] = new Edit.Insert(text.charAt(i - 1 - startMaxNonOverlap));
-                    }else if(del <= sub && del <= ins && del <= tra){
+                    }else if((maximizeScore && del >= sub && del >= ins && del >= tra) ||
+                            (!maximizeScore && del <= sub && del <= ins && del <= tra)){
                         dp[i][j] = del;
                         start[i][j] = start[i][j - 1];
                         if(returnPath)
@@ -160,9 +166,11 @@ public class CutoffSearcher{
 
             prevLast = last;
 
-            while((maximizeScore && dp[i][last] < currFullScoreThreshold) ||
-                    (!maximizeScore && dp[i][last] > currFullScoreThreshold)){
-                last--;
+            if(useCutoff){
+                while(last > 0 && ((maximizeScore && dp[i][last] < currFullScoreThreshold) ||
+                            (!maximizeScore && dp[i][last] > currFullScoreThreshold))){
+                    last--;
+                }
             }
 
             if(last == pattern.length()){
@@ -194,7 +202,7 @@ public class CutoffSearcher{
 
                     matches.add(m);
                 }
-            }else{
+            }else if(useCutoff){
                 last++;
             }
         }

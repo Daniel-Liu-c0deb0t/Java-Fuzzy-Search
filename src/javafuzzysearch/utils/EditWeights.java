@@ -94,4 +94,28 @@ public class EditWeights{
                 return mapPair.get(type).get(null).get(null);
         }
     }
+
+    public boolean diagonalMonotonic(){
+        boolean[] signs = new boolean[3];
+
+        for(Edit.Type key : mapSingle.keySet()){
+            Map<Character, Integer> map = mapSingle.get(key);
+
+            for(Character c : map.keySet())
+                signs[Integer.signum(map.get(c)) + 1] = true;
+        }
+
+        for(Edit.Type key : mapPair.keySet()){
+            Map<Character, Map<Character, Integer>> map = mapPair.get(key);
+
+            for(Character a : map.keySet()){
+                Map<Character, Integer> m = map.get(a);
+
+                for(Character b : m.keySet())
+                    signs[Integer.signum(m.get(b)) + 1] = true;
+            }
+        }
+
+        return !signs[0] || !signs[2];
+    }
 }

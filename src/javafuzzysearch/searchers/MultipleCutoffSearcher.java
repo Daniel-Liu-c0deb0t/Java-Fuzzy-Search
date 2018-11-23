@@ -27,6 +27,7 @@ public class MultipleCutoffSearcher{
     private boolean allowTranspositions = false, maximizeScore = false;
     private Map<Character, Set<Character>> wildcardChars = new HashMap<>();
     private Location nonOverlapLocation = Location.ANY;
+    private boolean useCutoff = true;
 
     public MultipleCutoffSearcher scoreThreshold(LengthParam scoreThreshold){
         this.scoreThreshold = scoreThreshold;
@@ -46,6 +47,7 @@ public class MultipleCutoffSearcher{
 
     public MultipleCutoffSearcher editWeights(EditWeights editWeights){
         this.editWeights = editWeights;
+        useCutoff = editWeights.diagonalMonotonic();
         return this;
     }
 
@@ -152,8 +154,8 @@ public class MultipleCutoffSearcher{
             if(returnPath)
                 path.set(0, i, new Edit.Delete(pattern.charAt(i - 1)));
 
-            if((maximizeScore && dp.get(0, i) < currFullScoreThreshold) ||
-                    (!maximizeScore && dp.get(0, i) > currFullScoreThreshold)){
+            if(useCutoff && ((maximizeScore && dp.get(0, i) < currFullScoreThreshold) ||
+                    (!maximizeScore && dp.get(0, i) > currFullScoreThreshold))){
                 last = i;
                 break;
             }
@@ -170,13 +172,14 @@ public class MultipleCutoffSearcher{
                     if(returnPath)
                         path.set(i, j, new Edit.Same(pattern.charAt(j - 1)));
                 }else{
+                    int inf = maximizeScore ? Integer.MIN_VALUE : Integer.MAX_VALUE;
                     int sub = Utils.addInt(dp.get(i - 1, j - 1),
                         editWeights.get(pattern.charAt(j - 1), text.charAt(i - 1 - startMaxNonOverlap), Edit.Type.SUB));
-                    int ins = j > prevLast ? Integer.MAX_VALUE : Utils.addInt(dp.get(i - 1, j),
+                    int ins = j > prevLast ? inf : Utils.addInt(dp.get(i - 1, j),
                             editWeights.get(text.charAt(i - 1 - startMaxNonOverlap), Edit.Type.INS));
                     int del = Utils.addInt(dp.get(i, j - 1),
                         editWeights.get(pattern.charAt(j - 1), Edit.Type.DEL));
-                    int tra = Integer.MAX_VALUE;
+                    int tra = inf;
 
                     if(allowTranspositions && j > 1 && i > 1 + startMaxNonOverlap && i <= text.length() + startMaxNonOverlap &&
                             Utils.equalsWildcard(text, i - 1 - startMaxNonOverlap, textEscapeIdx, pattern, j - 2, patternEscapeIdx, wildcardChars) &&
@@ -185,17 +188,20 @@ public class MultipleCutoffSearcher{
                             editWeights.get(pattern.charAt(j - 2), pattern.charAt(j - 1), Edit.Type.TRA));
                     }
 
-                    if(sub <= ins && sub <= del && sub <= tra){
+                    if((maximizeScore && sub >= ins && sub >= del && sub >= tra) ||
+                            (!maximizeScore && sub <= ins && sub <= del && sub <= tra)){
                         dp.set(i, j, sub);
                         start.set(i, j, start.get(i - 1, j - 1));
                         if(returnPath)
                             path.set(i, j, new Edit.Substitute(pattern.charAt(j - 1), text.charAt(i - 1 - startMaxNonOverlap)));
-                    }else if(ins <= sub && ins <= del && ins <= tra){
+                    }else if((maximizeScore && ins >= sub && ins >= del && ins >= tra) ||
+                            (!maximizeScore && ins <= sub && ins <= del && ins <= tra)){
                         dp.set(i, j, ins);
                         start.set(i, j, start.get(i - 1, j));
                         if(returnPath)
                             path.set(i, j, new Edit.Insert(text.charAt(i - 1 - startMaxNonOverlap)));
-                    }else if(del <= sub && del <= ins && del <= tra){
+                    }else if((maximizeScore && del >= sub && del >= ins && del >= tra) ||
+                            (!maximizeScore && del <= sub && del <= ins && del <= tra)){
                         dp.set(i, j, del);
                         start.set(i, j, start.get(i, j - 1));
                         if(returnPath)
@@ -211,9 +217,11 @@ public class MultipleCutoffSearcher{
 
             prevLast = last;
 
-            while((maximizeScore && dp.get(i, last) < currFullScoreThreshold) ||
-                    (!maximizeScore && dp.get(i, last) > currFullScoreThreshold)){
-                last--;
+            if(useCutoff){
+                while(last > 0 && ((maximizeScore && dp.get(i, last) < currFullScoreThreshold) ||
+                            (!maximizeScore && dp.get(i, last) > currFullScoreThreshold))){
+                    last--;
+                }
             }
 
             if(last == pattern.length()){
@@ -245,7 +253,7 @@ public class MultipleCutoffSearcher{
 
                     matches.add(m);
                 }
-            }else{
+            }else if(useCutoff){
                 last++;
             }
         }
