@@ -16,6 +16,7 @@ import javafuzzysearch.utils.LengthParam;
 import javafuzzysearch.utils.EditWeights;
 import javafuzzysearch.utils.Location;
 import javafuzzysearch.utils.Array2D;
+import javafuzzysearch.utils.StrView;
 
 /**
  * Implementation of stateful DP between multiple patterns and Ukkonen's cutoff algorithm for computing Levenshtein distance.
@@ -61,7 +62,7 @@ public class MultipleCutoffSearcher{
         return this;
     }
 
-    public List<PatternEscape> preprocessPatterns(List<String> patterns, List<Set<Integer>> patternEscapeIdx){
+    public List<PatternEscape> preprocessPatterns(List<StrView> patterns, List<Set<Integer>> patternEscapeIdx){
         List<PatternEscape> patternEscapePairs = new ArrayList<>();
 
         for(int i = 0; i < patterns.size(); i++)
@@ -77,7 +78,7 @@ public class MultipleCutoffSearcher{
         return patternEscapePairs;
     }
 
-    public List<List<FuzzyMatch>> search(String text, List<String> patterns, boolean returnPath){
+    public List<List<FuzzyMatch>> search(StrView text, List<StrView> patterns, boolean returnPath){
         List<Set<Integer>> empty = new ArrayList<>();
 
         for(int i = 0; i < patterns.size(); i++)
@@ -90,7 +91,7 @@ public class MultipleCutoffSearcher{
     private Array2D<Integer> start;
     private Array2D<Edit> path;
 
-    public List<List<FuzzyMatch>> search(String text, List<PatternEscape> patternEscapePairs, boolean returnPath, Set<Integer> textEscapeIdx){
+    public List<List<FuzzyMatch>> search(StrView text, List<PatternEscape> patternEscapePairs, boolean returnPath, Set<Integer> textEscapeIdx){
         List<List<FuzzyMatch>> matches = new ArrayList<>(patternEscapePairs.size());
 
         for(int i = 0; i < patternEscapePairs.size(); i++)
@@ -121,7 +122,7 @@ public class MultipleCutoffSearcher{
         return matches;
     }
 
-    private List<FuzzyMatch> search(String text, String pattern, boolean returnPath, Set<Integer> textEscapeIdx, Set<Integer> patternEscapeIdx){
+    private List<FuzzyMatch> search(StrView text, StrView pattern, boolean returnPath, Set<Integer> textEscapeIdx, Set<Integer> patternEscapeIdx){
         if(pattern.isEmpty())
             return new ArrayList<FuzzyMatch>();
 
@@ -270,11 +271,11 @@ public class MultipleCutoffSearcher{
     }
 
     public static class PatternEscape{
-        String pattern;
-        Set<Integer> escapeIdx;
-        int idx, lcp;
+        private StrView pattern;
+        private Set<Integer> escapeIdx;
+        private int idx, lcp;
 
-        public PatternEscape(String pattern, Set<Integer> escapeIdx, int idx){
+        public PatternEscape(StrView pattern, Set<Integer> escapeIdx, int idx){
             this.pattern = pattern;
             this.escapeIdx = escapeIdx;
             this.idx = idx;

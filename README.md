@@ -1,5 +1,5 @@
 # Java-Fuzzy-Search
-A fast and flexible Java fuzzy search library that supports bit parallel algorithms, wildcard characters, different scoring schemes, and other features. The goal is to focus on doing one thing (string search) and have tons of options and speedups for different use cases.
+A fast and flexible Java fuzzy search library that supports bit parallel algorithms, wildcard characters, different scoring schemes, and other features. The goal is to focus on doing one thing (string search) and have tons of options and optimizations for different use cases.
 
 ## Overview of features
 - Very basic exact string search using the KMP algorithm (use Bitap for wildcard characters and other features)

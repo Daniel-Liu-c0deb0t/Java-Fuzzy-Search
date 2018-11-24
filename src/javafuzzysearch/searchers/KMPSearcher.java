@@ -1,6 +1,8 @@
 package javafuzzysearch.searchers;
 
 import javafuzzysearch.utils.ExactMatch;
+import javafuzzysearch.utils.StrView;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,7 +15,7 @@ public class KMPSearcher{
      * @param pattern The pattern to be preprocessed.
      * @return The preprocessed longest suffix-prefix array.
      */
-    public int[] preprocessPattern(String pattern){
+    public int[] preprocessPattern(StrView pattern){
         int length = 0;
         int i = 1;
         int[] lsp = new int[pattern.length()];
@@ -42,7 +44,7 @@ public class KMPSearcher{
      * @param pattern String to be searched for.
      * @return A List of ExactMatches that have the indexes of match end locations.
      */
-    public List<ExactMatch> search(String text, String pattern){
+    public List<ExactMatch> search(StrView text, StrView pattern){
         return search(text, pattern, preprocessPattern(pattern));
     }
 
@@ -53,7 +55,7 @@ public class KMPSearcher{
      * @param lsp A preprocessed longest suffix-prefix array for the pattern.
      * @return A List of ExactMatches that have the indexes of the match end locations.
      */
-    public List<ExactMatch> search(String text, String pattern, int[] lsp){
+    public List<ExactMatch> search(StrView text, StrView pattern, int[] lsp){
         int i = 0, j = 0;
         List<ExactMatch> matches = new ArrayList<>();
 

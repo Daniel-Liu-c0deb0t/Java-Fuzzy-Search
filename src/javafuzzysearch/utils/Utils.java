@@ -7,16 +7,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Utils{
-    public static String repeatChar(char c, int n){
-        char[] res = new char[n];
-        Arrays.fill(res, c);
-        return new String(res);
-    }
-    
-    public static Set<Character> uniqueChars(String... strings){
+    public static Set<Character> uniqueChars(StrView... strings){
         Set<Character> res = new HashSet<>();
         
-        for(String s : strings){
+        for(StrView s : strings){
             for(int i = 0; i < s.length(); i++){
                 res.add(s.charAt(i));
             }
@@ -35,7 +29,7 @@ public class Utils{
         return (int)Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, c));
     }
 
-    public static boolean equalsWildcard(String a, int aIdx, Set<Integer> aEscapeIdx, String b, int bIdx, Set<Integer> bEscapeIdx, Map<Character, Set<Character>> wildcardChars){
+    public static boolean equalsWildcard(StrView a, int aIdx, Set<Integer> aEscapeIdx, StrView b, int bIdx, Set<Integer> bEscapeIdx, Map<Character, Set<Character>> wildcardChars){
         char c = a.charAt(aIdx);
         char d = b.charAt(bIdx);
 
@@ -44,7 +38,7 @@ public class Utils{
             (!bEscapeIdx.contains(bIdx) && wildcardChars.containsKey(d) && (wildcardChars.get(d) == null || wildcardChars.get(d).contains(c)));
     }
 
-    public static boolean equalsWildcard(String s, Set<Integer> escapeIdx, int aIdx, int bIdx, Map<Character, Set<Character>> wildcardChars){
+    public static boolean equalsWildcard(StrView s, Set<Integer> escapeIdx, int aIdx, int bIdx, Map<Character, Set<Character>> wildcardChars){
         char a = s.charAt(aIdx);
         char b = s.charAt(bIdx);
 
@@ -53,7 +47,7 @@ public class Utils{
             (!escapeIdx.contains(bIdx) && wildcardChars.containsKey(b) && (wildcardChars.get(b) == null || wildcardChars.get(b).contains(a)));
     }
 
-    public static int longestCommonPrefix(String a, String b){
+    public static int longestCommonPrefix(StrView a, StrView b){
         int length = Math.min(a.length(), b.length());
         
         for(int i = 0; i < length; i++){

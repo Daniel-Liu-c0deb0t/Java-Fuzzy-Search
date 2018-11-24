@@ -14,6 +14,7 @@ import javafuzzysearch.utils.Utils;
 import javafuzzysearch.utils.LengthParam;
 import javafuzzysearch.utils.EditWeights;
 import javafuzzysearch.utils.Location;
+import javafuzzysearch.utils.StrView;
 
 /**
  * Implementation of vanilla DP with Ukkonen's cutoff algorithm for computing Levenshtein distance.
@@ -59,11 +60,11 @@ public class CutoffSearcher{
         return this;
     }
 
-    public List<FuzzyMatch> search(String text, String pattern, boolean returnPath){
+    public List<FuzzyMatch> search(StrView text, StrView pattern, boolean returnPath){
         return search(text, pattern, returnPath, new HashSet<Integer>(), new HashSet<Integer>());
     }
 
-    public List<FuzzyMatch> search(String text, String pattern, boolean returnPath, Set<Integer> textEscapeIdx, Set<Integer> patternEscapeIdx){
+    public List<FuzzyMatch> search(StrView text, StrView pattern, boolean returnPath, Set<Integer> textEscapeIdx, Set<Integer> patternEscapeIdx){
         if(pattern.isEmpty())
             return new ArrayList<FuzzyMatch>();
 

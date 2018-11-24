@@ -5,6 +5,7 @@ import javafuzzysearch.utils.Utils;
 import javafuzzysearch.utils.BitVector;
 import javafuzzysearch.utils.LengthParam;
 import javafuzzysearch.utils.Location;
+import javafuzzysearch.utils.StrView;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -38,7 +39,7 @@ public class BitapSearcher{
         return this;
     }
 
-    public Map<Boolean, Map<Character, BitVector>> preprocessPattern(String pattern, Set<Character> alphabet, Set<Integer> patternEscapeIdx){
+    public Map<Boolean, Map<Character, BitVector>> preprocessPattern(StrView pattern, Set<Character> alphabet, Set<Integer> patternEscapeIdx){
         Map<Boolean, Map<Character, BitVector>> res = new HashMap<>();
 
         Map<Character, BitVector> normalMasks = new HashMap<>();
@@ -80,11 +81,11 @@ public class BitapSearcher{
         return res;
     }
 
-    public List<FuzzyMatch> search(String text, String pattern){
+    public List<FuzzyMatch> search(StrView text, StrView pattern){
         return search(text, pattern, preprocessPattern(pattern, Utils.uniqueChars(text, pattern), new HashSet<Integer>()), new HashSet<Integer>());
     }
 
-    public List<FuzzyMatch> search(String text, String pattern, Map<Boolean, Map<Character, BitVector>> patternMask, Set<Integer> textEscapeIdx){
+    public List<FuzzyMatch> search(StrView text, StrView pattern, Map<Boolean, Map<Character, BitVector>> patternMask, Set<Integer> textEscapeIdx){
         if(pattern.isEmpty())
             return new ArrayList<FuzzyMatch>();
         
