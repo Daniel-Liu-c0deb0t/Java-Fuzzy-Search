@@ -1,5 +1,5 @@
 package fuzzyfind;
 
-public class Pattern{
+public interface Pattern{
 
 }

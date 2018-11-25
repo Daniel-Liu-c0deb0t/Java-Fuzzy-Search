@@ -24,8 +24,12 @@ public class StrView implements Comparable{
     }
 
     public StrView substring(int i, int j){
-        int s = reversed ? (start + length - 1 - j) : (start + i);
+        int s = reversed ? (start + length - j) : (start + i);
         return new StrView(arr, s, j - i, reversed);
+    }
+
+    public StrView substring(int i){
+        return substring(i, length);
     }
 
     public int length(){
