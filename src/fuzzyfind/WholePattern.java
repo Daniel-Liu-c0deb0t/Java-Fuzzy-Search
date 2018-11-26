@@ -42,7 +42,7 @@ public class WholePattern{
                 List<Pattern> subSubList = patterns.subList(i + 1, j);
 
                 for(FuzzyMatch match : allMatches){
-                    res.addAll(search(text, subSubList, true);
+                    res.addAll(search(text, subSubList, true));
                 }
             }
         }

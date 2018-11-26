@@ -1,9 +1,10 @@
 package javafuzzysearch.utils;
 
-public class StrView implements Comparable{
+public class StrView implements Comparable<StrView>{
     private char[] arr;
     private int start, length;
     private boolean reversed;
+    private int hash;
 
     public StrView(String s){
         this.arr = s.toCharArray();
@@ -55,9 +56,7 @@ public class StrView implements Comparable{
     }
 
     @Override
-    public int compareTo(Object o){
-        StrView s = (StrView)o;
-
+    public int compareTo(StrView s){
         int min = Math.min(length, s.length());
 
         for(int i = 0; i < min; i++){
@@ -91,5 +90,19 @@ public class StrView implements Comparable{
         }
 
         return false;
+    }
+
+    @Override
+    public int hashCode(){
+        if(length == 0)
+            return 0;
+
+        if(hash == 0){
+            for(int i = 0; i < length; i++){
+                hash = hash * 31 + charAt(i);
+            }
+        }
+
+        return hash;
     }
 }
