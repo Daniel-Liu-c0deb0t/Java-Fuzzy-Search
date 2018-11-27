@@ -25,8 +25,8 @@ public class FuzzyMatch{
         return length;
     }
 
-    public void reverseIndex(int length){
-        index = length - index;
+    public void setIndex(int index){
+        this.index = index;
     }
 
     public int getOverlap(){
