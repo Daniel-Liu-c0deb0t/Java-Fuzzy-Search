@@ -7,7 +7,7 @@ import javafuzzysearch.utils.FuzzyMatch;
 
 public class RepeatingPattern implements Pattern{
     private Set<Character> acceptableChars;
-    private Integer minLength, maxLength;
+    private int minLength, maxLength;
 
     public RepeatingPattern(){
         // parse strings
