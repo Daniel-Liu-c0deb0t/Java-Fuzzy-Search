@@ -9,6 +9,7 @@ public class FuzzyPattern implements Pattern{
     private CutoffSearcher searcher;
     private List<StrView> patterns;
     private List<StrView> patternEscapeIdx;
+    private boolean required;
 
     public FuzzyPattern(){ // accept strings to parse
         this.searcher = new CutoffSearcher();
@@ -21,5 +22,13 @@ public class FuzzyPattern implements Pattern{
 
     public FuzzyMatch matchBest(StrView text, Set<Integer> textEscapeIdx, boolean reversed){
         return null;
+    }
+
+    public boolean isRequired(){
+        return required;
+    }
+
+    public boolean isFixedLength(){
+        return true;
     }
 }

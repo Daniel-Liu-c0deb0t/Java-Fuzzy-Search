@@ -16,4 +16,16 @@ public class RepeatingPattern implements Pattern{
     public boolean isAcceptable(char c){
         return acceptableChars.contains(c);
     }
+
+    public int getMinLength(){
+        return minLength;
+    }
+
+    public int getMaxLength(){
+        return maxLength;
+    }
+
+    public boolean isFixedLength(){
+        return minLength == maxLength;
+    }
 }

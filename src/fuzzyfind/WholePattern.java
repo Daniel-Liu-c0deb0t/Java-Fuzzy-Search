@@ -21,47 +21,125 @@ public class WholePattern{
     private List<FuzzyMatch> search(StrView text, List<Pattern> patterns, boolean anchoredStart, boolean anchoredEnd){
         List<FuzzyMatch> res = new ArrayList<>();
         int start = 0;
+        int prev = -1;
 
-        // handle required patterns
-        // find best match for not anchored patterns
-        // handle no match
         // implement Pattern stuff
+        // text escape characters
 
-        for(int i = 0; i < patterns.length(); i++){
+        int i = 0;
+
+        while(i < patterns.size()){
+            while(i < patterns.size() && !patterns.get(i).isFixedLength()){
+                if(prev == -1)
+                    prev = 0;
+                i++;
+            }
+
+            if(i >= patterns.size()){
+                // match repeating pattern
+            }
+
             int j = i;
 
-            while(patterns.get(j).isFixedLength())
+            while(j < patterns.size() && patterns.get(j).isFixedLength())
                 j++;
 
             List<Pattern> subList = patterns.subList(i, j);
 
             if(i == 0 && anchoredStart){
-                res.addAll(searchFixedLength(text, start, text.length() - 1, subList, true));
-            }else if(i == pattern.length() - 1 && anchoredEnd){
-                res.addAll(searchFixedLength(text, start, text.length() - 1, subList, false));
-            }else{
-                Pattern pattern = patterns.get(i);
-                StrView s = text.substring(start, Math.min(text.length(), start + pattern.maxLength()));
-                List<FuzzyMatch> allMatches = pattern.searchAll(s, true);
-                List<Pattern> subSubList = patterns.subList(i + 1, j);
-                List<FuzzyMatch> matches;
+                List<FuzzyMatch> matches = searchFuzzyPatterns(text, start, text.length() - 1, subList, true);
 
-                for(int j = allMatches.size() - 1; j >= 0; j--){
-                    FuzzyMatch match = allMatches.get(j);
-                    match.setIndex(start + s.length() - 1 - match.getIndex() + match.getLength() - 1);
-                    matches = searchFixedLength(text, match.getIndex() + 1, text.length() - 1, subSubList, true);
-                    break;
+                if(matches == null)
+                    return null;
+
+                res.addAll(matches);
+            }else if(i == pattern.size() - 1 && anchoredEnd){
+                List<FuzzyMatch> matches = searchFuzzyPatterns(text, start, text.length() - 1, subList, false);
+
+                if(matches == null)
+                    return null;
+
+                if(prev != -1){
+                    int endIdx = text.length() - 1;
+                    int k = 0;
+
+                    while(k < matches.size() && matches.get(k) == null)
+                        k++;
+
+                    if(k < matches.size()){
+                        endIdx = matches.get(k).getIndex() - matches.get(k).getLength();
+                    }
+
+                    List<Pattern> repeatingList = patterns.subList(prev, i);
+                    List<FuzzyMatch> repeatingMatches =
+                        searchRepeatingPatterns(text, start, endIdx, repeatingList);
+
+                    if(repeatingMatches == null)
+                        return null;
+
+                    res.addAll(repeatingMatches);
                 }
 
-                res.add(match);
                 res.addAll(matches);
+            }else{
+                StrView s = text.substring(start);
+                boolean foundMatch = false;
+
+                outerLoop:
+                for(int k = i; k < j; k++){
+                    Pattern pattern = patterns.get(k);
+                    List<FuzzyMatch> allMatches = pattern.searchAll(s, true);
+
+                    if(allMatches.isEmpty())
+                        continue;
+
+                    List<Pattern> fuzzyList = patterns.subList(k + 1, j);
+
+                    for(int l = allMatches.size() - 1; l >= 0; l--){
+                        FuzzyMatch startMatch = allMatches.get(l);
+                        startMatch.setIndex(start + s.length() - 1 - startMatch.getIndex() + startMatch.getLength() - 1);
+
+                        List<Pattern> repeatingList = null;
+                        List<FuzzyMatch> repeatingMatches = null;
+
+                        if(prev != -1){
+                            repeatingList = patterns.subList(prev, i);
+                            repeatingMatches = searchRepeatingPatterns(text, start, startMatch.getIndex() - startMatch.getLength(), repeatingList);
+
+                            if(repeatingMatches == null)
+                                continue;
+                        }
+
+                        List<FuzzyMatch> fuzzyMatches =
+                            searchFuzzyPatterns(text, startMatch.getIndex() + 1, text.length() - 1, fuzzyList, true);
+
+                        if(fuzzyMatches == null)
+                            continue;
+
+                        if(prev != -1)
+                            res.add(repeatingMatches);
+
+                        res.add(startMatch);
+                        res.addAll(fuzzyMatches);
+                        foundMatch = true;
+                        break outerLoop;
+                    }
+
+                    if(pattern.isRequired())
+                        break;
+                }
+
+                if(!foundMatch)
+                    return null;
             }
 
             start = res.get(res.size() - 1).getIndex() + 1;
+            prev = j;
+            i = j;
         }
     }
 
-    private List<FuzzyMatch> searchArbitraryLength(StrView text, int start, int end, List<Pattern> patterns){
+    private List<FuzzyMatch> searchRepeatingPatterns(StrView text, int start, int end, List<Pattern> patterns){
         text = text.substring(start, end + 1);
 
         boolean[][] dp = new boolean[text.length() + 1][patterns.size() + 1];
@@ -132,8 +210,8 @@ public class WholePattern{
         return matches;
     }
 
-    private List<FuzzyMatch> searchFixedLength(StrView text, int start, int end, List<Pattern> patterns, boolean reversed){
-        List<FuzzyMatch> res = new ArrayList<>();
+    private List<FuzzyMatch> searchFuzzyPatterns(StrView text, int start, int end, List<Pattern> patterns, boolean reversed){
+        List<FuzzyMatch> matches = new ArrayList<>();
         int idx = reversed ? start : end;
 
         for(int i = 0; i < patterns.size(); i++){
@@ -141,23 +219,28 @@ public class WholePattern{
             StrView s;
 
             if(reversed)
-                s = text.substring(idx, Math.min(end + 1, idx + pattern.getMaxLength()));
+                s = text.substring(idx, end + 1);
             else
-                s = text.substring(Math.max(start, idx - pattern.getMaxLength() + 1), idx + 1);
+                s = text.substring(start, idx + 1);
 
             FuzzyMatch match = pattern.matchBest(s, reversed);
 
-            if(reversed){
-                match.setIndex(idx + match.getLength() - 1);
-                idx += match.getLength();
+            if(match == null){
+                if(pattern.isRequired())
+                    return null;
             }else{
-                match.setIndex(idx);
-                idx -= match.getLength();
+                if(reversed){
+                    match.setIndex(idx + match.getLength() - 1);
+                    idx += match.getLength();
+                }else{
+                    match.setIndex(idx);
+                    idx -= match.getLength();
+                }
             }
 
-            res.add(match);
+            matches.add(match);
         }
 
-        return res;
+        return matches;
     }
 }
