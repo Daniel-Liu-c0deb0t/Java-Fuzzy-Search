@@ -13,11 +13,7 @@ public class RepeatingPattern implements Pattern{
         // parse strings
     }
 
-    public List<FuzzyMatch> searchAll(StrView text, Set<Integer> textEscapeIdx){
-        return null;
-    }
-
-    public FuzzyMatch matchBest(StrView text, Set<Integer> textEscapeIdx){
-        return null;
+    public boolean isAcceptable(char c){
+        return acceptableChars.contains(c);
     }
 }

@@ -22,6 +22,7 @@ public class WholePattern{
         List<FuzzyMatch> res = new ArrayList<>();
         int start = 0;
 
+        // handle required patterns
         // find best match for not anchored patterns
         // handle no match
         // implement Pattern stuff
@@ -60,7 +61,9 @@ public class WholePattern{
         }
     }
 
-    private boolean searchArbitraryLength(StrView text, int start, int end, List<Pattern> patterns){
+    private List<FuzzyMatch> searchArbitraryLength(StrView text, int start, int end, List<Pattern> patterns){
+        text = text.substring(start, end + 1);
+
         boolean[][] dp = new boolean[text.length() + 1][patterns.size() + 1];
         int[][] prefix = new int[text.length() + 1][patterns.size() + 1];
         int[][] prev = new int[text.length() + 1][patterns.size() + 1];
@@ -68,6 +71,15 @@ public class WholePattern{
         dp[0][0] = true;
         prefix[0][0] = 1;
         prev[0][0] = -1;
+
+        for(int i = 1; i <= patterns.size(); i++){
+            if(((RepeatingPattern)patterns.get(i - 1)).getMinLength() != 0)
+                break;
+
+            dp[0][i] = true;
+            prefix[0][i] = 1;
+            prev[0][i] = -1;
+        }
 
         int[] patternLength = new int[patterns.size()];
         int[] prevTrueIdx = new int[patterns.size() + 1];
@@ -77,13 +89,15 @@ public class WholePattern{
             prevTrueIdx[0] = i;
 
             for(int j = 1; j <= patterns.size(); j++){
-                if(patterns.get(j - 1).acceptableChars.contains(text.charAt(i - 1)))
+                RepeatingPattern pattern = (RepeatingPattern)patterns.get(j - 1);
+
+                if(pattern.isAcceptable(text.charAt(i - 1)))
                     patternLength[j - 1]++;
                 else
                     patternLength[j - 1] = 0;
 
-                int textHi = i - patterns.get(j - 1).minLength;
-                int textLo = Math.max(i - patterns.get(j - 1).maxLength, i - patternLength[j - 1]);
+                int textHi = i - pattern.getMinLength();
+                int textLo = Math.max(i - pattern.getMaxLength(), i - patternLength[j - 1]);
 
                 if(textLo <= textHi){
                     int sum = prefix[textHi][j - 1];
@@ -102,19 +116,17 @@ public class WholePattern{
             }
         }
 
-        List<FuzzyMatch> matches = new ArrayList<>();
+        List<FuzzyMatch> matches = null;
 
         if(dp[text.length()][patterns.size()]){
+            matches = new ArrayList<FuzzyMatch>();
             int x = text.length(), y = patterns.size();
 
             while(prev[x][y] > -1){
-                matches.add(new FuzzyMatch(x - 1, prev[x][y], prev[x][y], 0));
+                matches.add(new FuzzyMatch(start + x - 1, prev[x][y], prev[x][y], 0));
                 x -= prev[x][y];
                 y -= 1;
             }
-        }else{
-            for(int i = 0; i < patterns.size(); i++)
-                matches.add(null);
         }
 
         return matches;
@@ -125,13 +137,13 @@ public class WholePattern{
         int idx = reversed ? start : end;
 
         for(int i = 0; i < patterns.size(); i++){
-            Pattern pattern = patterns.get(reversed ? i : (patterns.size() - 1 - i));
+            FuzzyPattern pattern = (FuzzyPattern)patterns.get(reversed ? i : (patterns.size() - 1 - i));
             StrView s;
 
             if(reversed)
-                s = text.substring(idx, Math.min(end + 1, idx + pattern.maxLength()));
+                s = text.substring(idx, Math.min(end + 1, idx + pattern.getMaxLength()));
             else
-                s = text.substring(Math.max(start, idx - pattern.maxLength() + 1), idx + 1);
+                s = text.substring(Math.max(start, idx - pattern.getMaxLength() + 1), idx + 1);
 
             FuzzyMatch match = pattern.matchBest(s, reversed);
 
