@@ -1,15 +1,15 @@
 package fuzzyfind;
 
+import javafuzzysearch.utils.StrView;
+
 import java.util.List;
 import java.util.Set;
 
-import javafuzzysearch.utils.FuzzyMatch;
-
-public class RepeatingPattern implements Pattern{
+public class RepeatingIntervalPattern implements Pattern{
     private Set<Character> acceptableChars;
     private int minLength, maxLength;
 
-    public RepeatingPattern(){
+    public RepeatingIntervalPattern(){
         // parse strings
     }
 
@@ -25,7 +25,8 @@ public class RepeatingPattern implements Pattern{
         return maxLength;
     }
 
-    public boolean isFixedLength(){
-        return minLength == maxLength;
+    @Override
+    public boolean isRequired(){
+        return true;
     }
 }

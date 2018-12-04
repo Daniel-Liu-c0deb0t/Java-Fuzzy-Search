@@ -1,21 +1,22 @@
 package fuzzyfind;
 
-import javafuzzysearch.utils.FuzzyMatch;
-import javafuzzysearch.searchers.CutoffSearcher;
-import javafuzzysearch.utils.StrView;
-
 import java.util.List;
 import java.util.Set;
 
-public class FuzzyPattern implements FixedPattern{
-    private CutoffSearcher searcher;
-    private List<StrView> patterns;
-    private List<StrView> patternEscapeIdx;
+import javafuzzysearch.utils.FuzzyMatch;
+import javafuzzysearch.utils.StrView;
+
+public class RepeatingFixedPattern implements FixedPattern{
+    private Set<Character> acceptableChars;
+    private int length;
     private boolean required;
 
-    public FuzzyPattern(){ // accept strings to parse
-        this.searcher = new CutoffSearcher();
-        // initialize patterns and searcher
+    public RepeatingFixedPattern(){
+        // parse strings
+    }
+
+    public int getLength(){
+        return length;
     }
 
     @Override
