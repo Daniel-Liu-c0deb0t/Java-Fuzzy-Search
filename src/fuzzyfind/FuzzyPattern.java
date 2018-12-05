@@ -5,7 +5,6 @@ import javafuzzysearch.searchers.CutoffSearcher;
 import javafuzzysearch.utils.StrView;
 
 import java.util.List;
-import java.util.Set;
 
 public class FuzzyPattern implements FixedPattern{
     private CutoffSearcher searcher;
@@ -19,12 +18,12 @@ public class FuzzyPattern implements FixedPattern{
     }
 
     @Override
-    public List<FuzzyMatch> searchAll(StrView text, Set<Integer> textEscapeIdx, int start, boolean reversed){
+    public List<FuzzyMatch> searchAll(StrView text, boolean reversed){
         return null; // return best match!
     }
 
     @Override
-    public FuzzyMatch matchBest(StrView text, Set<Integer> textEscapeIdx, int start, boolean reversed){
+    public FuzzyMatch matchBest(StrView text, boolean reversed){
         return null;
     }
 

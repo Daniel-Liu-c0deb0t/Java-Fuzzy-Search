@@ -62,7 +62,7 @@ public class CutoffTest{
         set.add('e');
         wildcards.put('*', set);
 
-        CutoffSearcher s5 = new CutoffSearcher().wildcardChars(wildcards);
+        CutoffSearcher s5 = new CutoffSearcher().wildcardChars(wildcards, new HashMap<Character, Set<Character>>());
 
         t.testStrEquals(s5.search(new StrView("h*llo world"), new StrView("hello"), false),
                         "[FuzzyMatch(index = 4, length = 5, overlap = 5, score = 0)]");
@@ -73,7 +73,7 @@ public class CutoffTest{
         Map<Character, Set<Character>> wildcards2 = new HashMap<>();
         wildcards2.put('*', null);
 
-        CutoffSearcher s6 = new CutoffSearcher().wildcardChars(wildcards2);
+        CutoffSearcher s6 = new CutoffSearcher().wildcardChars(wildcards2, new HashMap<Character, Set<Character>>());
 
         t.testStrEquals(s6.search(new StrView("h**lo world"), new StrView("hello"), false),
                         "[FuzzyMatch(index = 4, length = 5, overlap = 5, score = 0)]");

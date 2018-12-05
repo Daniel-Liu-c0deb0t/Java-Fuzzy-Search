@@ -2,7 +2,6 @@ package fuzzyfind;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Set;
 
 import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.StrView;
@@ -16,11 +15,11 @@ public class WholePattern{
         this.anchored = anchored;
     }
 
-    public List<List<StrView>> search(List<List<StrView>> texts, List<List<Set<Integer>>> textEscapeIdx){
+    public List<List<StrView>> search(List<List<StrView>> texts){
         return null;
     }
 
-    private List<FuzzyMatch> search(StrView text, Set<Integer> textEscapeIdx, List<Pattern> patterns, boolean anchoredStart, boolean anchoredEnd){
+    private List<FuzzyMatch> search(StrView text, List<Pattern> patterns, boolean anchoredStart, boolean anchoredEnd){
         List<FuzzyMatch> res = new ArrayList<>();
         int start = 0;
         int prev = -1;
@@ -53,14 +52,14 @@ public class WholePattern{
             List<Pattern> subList = patterns.subList(i, j);
 
             if(i == 0 && anchoredStart){
-                List<FuzzyMatch> matches = searchFuzzyPatterns(text, textEscapeIdx, start, text.length() - 1, subList, true);
+                List<FuzzyMatch> matches = searchFuzzyPatterns(text, start, text.length() - 1, subList, true);
 
                 if(matches == null)
                     return null;
 
                 res.addAll(matches);
             }else if(i == patterns.size() - 1 && anchoredEnd){
-                List<FuzzyMatch> fuzzyMatches = searchFuzzyPatterns(text, textEscapeIdx, start, text.length() - 1, subList, false);
+                List<FuzzyMatch> fuzzyMatches = searchFuzzyPatterns(text, start, text.length() - 1, subList, false);
 
                 if(fuzzyMatches == null)
                     return null;
@@ -94,7 +93,7 @@ public class WholePattern{
                 outerLoop:
                 for(int k = i; k < j; k++){
                     FixedPattern pattern = (FixedPattern)patterns.get(k);
-                    List<FuzzyMatch> allMatches = pattern.searchAll(s, textEscapeIdx, start, true);
+                    List<FuzzyMatch> allMatches = pattern.searchAll(s, true);
 
                     if(allMatches.isEmpty())
                         continue;
@@ -117,7 +116,7 @@ public class WholePattern{
                         }
 
                         List<FuzzyMatch> fuzzyMatches =
-                            searchFuzzyPatterns(text, textEscapeIdx, startMatch.getIndex() + 1, text.length() - 1, fuzzyList, true);
+                            searchFuzzyPatterns(text, startMatch.getIndex() + 1, text.length() - 1, fuzzyList, true);
 
                         if(fuzzyMatches == null)
                             continue;
@@ -225,7 +224,7 @@ public class WholePattern{
         return matches;
     }
 
-    private List<FuzzyMatch> searchFuzzyPatterns(StrView text, Set<Integer> textEscapeIdx, int start, int end, List<Pattern> patterns, boolean reversed){
+    private List<FuzzyMatch> searchFuzzyPatterns(StrView text, int start, int end, List<Pattern> patterns, boolean reversed){
         List<FuzzyMatch> matches = new ArrayList<>();
         int idx = reversed ? start : end;
 
@@ -238,7 +237,7 @@ public class WholePattern{
             else
                 s = text.substring(start, idx + 1);
 
-            FuzzyMatch match = pattern.matchBest(s, textEscapeIdx, reversed ? idx : start, reversed);
+            FuzzyMatch match = pattern.matchBest(s, reversed);
 
             if(match == null){
                 if(pattern.isRequired())

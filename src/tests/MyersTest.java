@@ -50,7 +50,7 @@ public class MyersTest{
         set.add('e');
         wildcards.put('*', set);
 
-        MyersSearcher s5 = new MyersSearcher().wildcardChars(wildcards);
+        MyersSearcher s5 = new MyersSearcher().wildcardChars(wildcards, new HashMap<Character, Set<Character>>());
 
         t.testStrEquals(s5.search(new StrView("h*llo world"), new StrView("hello")),
                         "[FuzzyMatch(index = 4, length = 5, overlap = 5, score = 0)]");

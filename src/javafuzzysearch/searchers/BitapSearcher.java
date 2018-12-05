@@ -20,7 +20,8 @@ import java.util.HashSet;
 public class BitapSearcher{
     private LengthParam maxEdits = new LengthParam(0, false, false);
     private LengthParam minOverlap = new LengthParam(0, false, true);
-    private Map<Character, Set<Character>> wildcardChars = new HashMap<>();
+    private Map<Character, Set<Character>> patternWildcard = new HashMap<>();
+    private Map<Character, Set<Character>> textWildcard = new HashMap<>();
     private Location nonOverlapLocation = Location.ANY;
 
     public BitapSearcher maxEdits(LengthParam maxEdits){
@@ -34,8 +35,9 @@ public class BitapSearcher{
         return this;
     }
 
-    public BitapSearcher wildcardChars(Map<Character, Set<Character>> wildcardChars){
-        this.wildcardChars = wildcardChars;
+    public BitapSearcher wildcardChars(Map<Character, Set<Character>> textWildcard, Map<Character, Set<Character>> patternWildcard){
+        this.patternWildcard = patternWildcard;
+        this.textWildcard = textWildcard;
         return this;
     }
 
@@ -47,7 +49,7 @@ public class BitapSearcher{
 
         for(char c : alphabet){
             normalMasks.put(c, new BitVector(pattern.length() + 1));
-            if(wildcardChars.containsKey(c))
+            if(textWildcard.containsKey(c))
                 wildcardMasks.put(c, new BitVector(pattern.length() + 1));
         }
 
@@ -55,21 +57,21 @@ public class BitapSearcher{
             char c = pattern.charAt(i);
             normalMasks.get(c).set(i);
 
-            if(wildcardChars.containsKey(c) && !patternEscapeIdx.contains(i)){
+            if(patternWildcard.containsKey(c) && !patternEscapeIdx.contains(i)){
                 Set<Character> set;
 
-                if(wildcardChars.get(c) == null)
+                if(patternWildcard.get(c) == null)
                     set = alphabet;
                 else
-                    set = wildcardChars.get(c);
+                    set = patternWildcard.get(c);
 
                 for(char d : set){
                     normalMasks.get(d).set(i);
                 }
             }
 
-            for(char wildcard : wildcardChars.keySet()){
-                Set<Character> set = wildcardChars.get(wildcard);
+            for(char wildcard : textWildcard.keySet()){
+                Set<Character> set = textWildcard.get(wildcard);
                 if(set == null || set.contains(c))
                     wildcardMasks.get(wildcard).set(i);
             }
@@ -118,7 +120,7 @@ public class BitapSearcher{
                 if(j == 0){
                     if(i >= startMaxNonOverlap && i < startMaxNonOverlap + text.length()){
                         int idx = i - startMaxNonOverlap;
-                        r[0].and(patternMask.get(wildcardChars.containsKey(text.charAt(idx)) &&
+                        r[0].and(patternMask.get(textWildcard.containsKey(text.charAt(idx)) &&
                                     !textEscapeIdx.contains(idx)).get(text.charAt(idx)));
                     }
                 }else{
@@ -126,7 +128,7 @@ public class BitapSearcher{
                     
                     if(i >= startMaxNonOverlap && i < startMaxNonOverlap + text.length()){
                         int idx = i - startMaxNonOverlap;
-                        r[j].and(patternMask.get(wildcardChars.containsKey(text.charAt(idx)) &&
+                        r[j].and(patternMask.get(textWildcard.containsKey(text.charAt(idx)) &&
                                     !textEscapeIdx.contains(idx)).get(text.charAt(idx)));
                     }
                     

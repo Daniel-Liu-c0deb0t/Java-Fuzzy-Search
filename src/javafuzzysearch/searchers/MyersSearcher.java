@@ -20,7 +20,8 @@ public class MyersSearcher{
     private LengthParam maxEdits = new LengthParam(0, false, false);
     private LengthParam minOverlap = new LengthParam(0, false, true);
     private boolean allowTranspositions = false;
-    private Map<Character, Set<Character>> wildcardChars = new HashMap<>();
+    private Map<Character, Set<Character>> patternWildcard = new HashMap<>();
+    private Map<Character, Set<Character>> textWildcard = new HashMap<>();
 
     public MyersSearcher maxEdits(LengthParam maxEdits){
         this.maxEdits = maxEdits;
@@ -37,8 +38,9 @@ public class MyersSearcher{
         return this;
     }
 
-    public MyersSearcher wildcardChars(Map<Character, Set<Character>> wildcardChars){
-        this.wildcardChars = wildcardChars;
+    public MyersSearcher wildcardChars(Map<Character, Set<Character>> textWildcard, Map<Character, Set<Character>> patternWildcard){
+        this.patternWildcard = patternWildcard;
+        this.textWildcard = textWildcard;
         return this;
     }
 
@@ -50,7 +52,7 @@ public class MyersSearcher{
 
         for(char c : alphabet){
             normalMasks.put(c, new BitVector(pattern.length()));
-            if(wildcardChars.containsKey(c))
+            if(textWildcard.containsKey(c))
                 wildcardMasks.put(c, new BitVector(pattern.length()));
         }
 
@@ -58,21 +60,21 @@ public class MyersSearcher{
             char c = pattern.charAt(i);
             normalMasks.get(c).set(i);
 
-            if(wildcardChars.containsKey(c) && !patternEscapeIdx.contains(i)){
+            if(patternWildcard.containsKey(c) && !patternEscapeIdx.contains(i)){
                 Set<Character> set;
 
-                if(wildcardChars.get(c) == null)
+                if(patternWildcard.get(c) == null)
                     set = alphabet;
                 else
-                    set = wildcardChars.get(c);
+                    set = patternWildcard.get(c);
 
                 for(char d : set){
                     normalMasks.get(d).set(i);
                 }
             }
 
-            for(char wildcard : wildcardChars.keySet()){
-                Set<Character> set = wildcardChars.get(wildcard);
+            for(char wildcard : textWildcard.keySet()){
+                Set<Character> set = textWildcard.get(wildcard);
                 if(set == null || set.contains(c))
                     wildcardMasks.get(wildcard).set(i);
             }
@@ -108,7 +110,7 @@ public class MyersSearcher{
         for(int i = 0; i < currMaxNonOverlap + text.length(); i++){
             BitVector m;
             if(i < text.length()){
-                m = patternMask.get(wildcardChars.containsKey(text.charAt(i)) &&
+                m = patternMask.get(textWildcard.containsKey(text.charAt(i)) &&
                         !textEscapeIdx.contains(i)).get(text.charAt(i));
             }else{
                 m = allSet;

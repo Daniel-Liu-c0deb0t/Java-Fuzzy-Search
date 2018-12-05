@@ -24,7 +24,8 @@ public class CutoffSearcher{
     private LengthParam minOverlap = new LengthParam(0, false, true);
     private EditWeights editWeights = new EditWeights();
     private boolean allowTranspositions = false, maximizeScore = false;
-    private Map<Character, Set<Character>> wildcardChars = new HashMap<>();
+    private Map<Character, Set<Character>> patternWildcard = new HashMap<>();
+    private Map<Character, Set<Character>> textWildcard = new HashMap<>();
     private Location nonOverlapLocation = Location.ANY;
     private boolean useCutoff = true;
 
@@ -55,8 +56,9 @@ public class CutoffSearcher{
         return this;
     }
 
-    public CutoffSearcher wildcardChars(Map<Character, Set<Character>> wildcardChars){
-        this.wildcardChars = wildcardChars;
+    public CutoffSearcher wildcardChars(Map<Character, Set<Character>> textWildcard, Map<Character, Set<Character>> patternWildcard){
+        this.patternWildcard = patternWildcard;
+        this.textWildcard = textWildcard;
         return this;
     }
 
@@ -141,7 +143,7 @@ public class CutoffSearcher{
 
             for(int j = 1; j <= last; j++){
                 if(i <= startMaxNonOverlap || i > text.length() + startMaxNonOverlap ||
-                        Utils.equalsWildcard(text, i - 1 - startMaxNonOverlap, textEscapeIdx, pattern, j - 1, patternEscapeIdx, wildcardChars)){
+                        Utils.equalsWildcard(text, i - 1 - startMaxNonOverlap, textEscapeIdx, pattern, j - 1, patternEscapeIdx, textWildcard, patternWildcard)){
                     dp[currIdx][j] = Utils.addInt(dp[currIdx - 1][j - 1], editWeights.get(pattern.charAt(j - 1), Edit.Type.SAME));
                     start[currIdx][j] = start[currIdx - 1][j - 1];
                     if(returnPath)
@@ -157,8 +159,8 @@ public class CutoffSearcher{
                     int tra = inf;
 
                     if(allowTranspositions && j > 1 && i > 1 + startMaxNonOverlap && i <= text.length() + startMaxNonOverlap &&
-                            Utils.equalsWildcard(text, i - 1 - startMaxNonOverlap, textEscapeIdx, pattern, j - 2, patternEscapeIdx, wildcardChars) &&
-                            Utils.equalsWildcard(text, i - 2 - startMaxNonOverlap, textEscapeIdx, pattern, j - 1, patternEscapeIdx, wildcardChars)){
+                            Utils.equalsWildcard(text, i - 1 - startMaxNonOverlap, textEscapeIdx, pattern, j - 2, patternEscapeIdx, textWildcard, patternWildcard) &&
+                            Utils.equalsWildcard(text, i - 2 - startMaxNonOverlap, textEscapeIdx, pattern, j - 1, patternEscapeIdx, textWildcard, patternWildcard)){
                         tra = Utils.addInt(dp[currIdx - 2][j - 2],
                             editWeights.get(pattern.charAt(j - 2), pattern.charAt(j - 1), Edit.Type.TRA));
                     }

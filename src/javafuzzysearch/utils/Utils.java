@@ -29,13 +29,13 @@ public class Utils{
         return (int)Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, c));
     }
 
-    public static boolean equalsWildcard(StrView a, int aIdx, Set<Integer> aEscapeIdx, StrView b, int bIdx, Set<Integer> bEscapeIdx, Map<Character, Set<Character>> wildcardChars){
+    public static boolean equalsWildcard(StrView a, int aIdx, Set<Integer> aEscapeIdx, StrView b, int bIdx, Set<Integer> bEscapeIdx, Map<Character, Set<Character>> aWildcardChars, Map<Character, Set<Character>> bWildcardChars){
         char c = a.charAt(aIdx);
         char d = b.charAt(bIdx);
 
         return c == d ||
-            (!aEscapeIdx.contains(aIdx) && wildcardChars.containsKey(c) && (wildcardChars.get(c) == null || wildcardChars.get(c).contains(d))) ||
-            (!bEscapeIdx.contains(bIdx) && wildcardChars.containsKey(d) && (wildcardChars.get(d) == null || wildcardChars.get(d).contains(c)));
+            (!aEscapeIdx.contains(aIdx) && aWildcardChars.containsKey(c) && (aWildcardChars.get(c) == null || aWildcardChars.get(c).contains(d))) ||
+            (!bEscapeIdx.contains(bIdx) && bWildcardChars.containsKey(d) && (bWildcardChars.get(d) == null || bWildcardChars.get(d).contains(c)));
     }
 
     public static boolean equalsWildcard(StrView s, Set<Integer> escapeIdx, int aIdx, int bIdx, Map<Character, Set<Character>> wildcardChars){
