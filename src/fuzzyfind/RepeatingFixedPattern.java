@@ -12,8 +12,30 @@ public class RepeatingFixedPattern implements FixedPattern{
     private int length;
     private boolean required;
 
-    public RepeatingFixedPattern(){
-        // parse strings
+    public RepeatingFixedPattern(Map<StrView, StrView> params){
+        int requiredParams = 2;
+
+        StrView s = new StrView("required");
+
+        if(params.containsKey(s))
+            required = true;
+
+        s = new StrView("length");
+
+        if(params.containsKey(s)){
+            length = ParsingUtils.parseInt(params.get(s));
+            requiredParams--;
+        }
+
+        s = new StrView("pattern");
+
+        if(params.containsKey(s)){
+            acceptableChars = ParsingUtils.parseRepeatingPattern(ParsingUtils.parseStr(s));
+            requiredParams--;
+        }
+
+        if(requiredParams != 0)
+            throw new IllegalArgumentException("Repeating fixed pattern requires " + requiredParams + " arguments!");
     }
 
     public int getLength(){
