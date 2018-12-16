@@ -3,6 +3,7 @@ package fuzzyfind;
 import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.searchers.CutoffSearcher;
 import javafuzzysearch.utils.StrView;
+import javafuzzysearch.utils.LengthParam;
 
 import java.util.List;
 import java.util.Set;
@@ -19,9 +20,15 @@ public class FuzzyPattern implements FixedPattern{
     private List<Set<Integer>> patternEscapeIdxReversed;
     private boolean required;
 
-    public FuzzyPattern(){ // accept strings to parse
-        this.searcher = new CutoffSearcher();
-        // initialize patterns and searcher
+    public FuzzyPattern(){
+        searcher = new CutoffSearcher();
+        searcher.scoreThreshold(new LengthParam(1));
+        patterns = new ArrayList<StrView>();
+        patterns.add(new StrView("hello"));
+        patternEscapeIdx = new ArrayList<Set<Integer>>();
+        patternEscapeIdx.add(new HashSet<Integer>());
+        patternEscapeIdxReversed = new ArrayList<Set<Integer>>();
+        patternEscapeIdxReversed.add(new HashSet<Integer>());
     }
 
     @Override
@@ -60,7 +67,7 @@ public class FuzzyPattern implements FixedPattern{
         if(reversed)
             text = text.reverse();
 
-        FuzzyMatch match = null;
+        FuzzyMatch match = required ? null : new FuzzyMatch(text.length() - 1, 0, 0, 0);
 
         for(int i = 0; i < patterns.size(); i++){
             StrView pattern = reversed ? patterns.get(i).reverse() : patterns.get(i);

@@ -3,9 +3,11 @@ package fuzzyfind;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.Map;
 
 import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.StrView;
+import javafuzzysearch.utils.Utils;
 
 public class RepeatingFixedPattern implements FixedPattern{
     private Set<Character> acceptableChars;
@@ -23,14 +25,16 @@ public class RepeatingFixedPattern implements FixedPattern{
         s = new StrView("length");
 
         if(params.containsKey(s)){
-            length = ParsingUtils.parseInt(params.get(s));
+            //length = ParsingUtils.parseInt(params.get(s));
+            length = Integer.parseInt(params.get(s).toString());
             requiredParams--;
         }
 
         s = new StrView("pattern");
 
         if(params.containsKey(s)){
-            acceptableChars = ParsingUtils.parseRepeatingPattern(ParsingUtils.parseStr(s));
+            //acceptableChars = ParsingUtils.parseRepeatingPattern(ParsingUtils.parseStr(s));
+            acceptableChars = Utils.uniqueChars(params.get(s));
             requiredParams--;
         }
 
@@ -78,14 +82,14 @@ public class RepeatingFixedPattern implements FixedPattern{
     @Override
     public FuzzyMatch matchBest(StrView text, boolean reversed){
         if(length > text.length())
-            return null;
+            return required ? null : new FuzzyMatch(text.length() - 1, 0, 0, 0);
 
         if(reversed)
             text = text.reverse();
 
         for(int i = 0; i < length; i++){
             if(!acceptableChars.contains(text.charAt(text.length() - 1 - i)))
-                return null;
+                return required ? null : new FuzzyMatch(text.length() - 1, 0, 0, 0);
         }
 
         return new FuzzyMatch(text.length() - 1, length, length, 0);
