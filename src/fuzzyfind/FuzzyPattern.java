@@ -46,6 +46,7 @@ public class FuzzyPattern implements FixedPattern{
 
             for(int j = 0; j < matches.size(); j++){
                 FuzzyMatch curr = matches.get(j);
+                curr.setLength(curr.getLength() - pattern.length() + curr.getOverlap());
 
                 if(!map.containsKey(curr.getIndex()) || map.get(curr.getIndex()).getScore() > curr.getScore())
                     map.put(curr.getIndex(), curr);
@@ -68,6 +69,7 @@ public class FuzzyPattern implements FixedPattern{
             text = text.reverse();
 
         FuzzyMatch match = required ? null : new FuzzyMatch(text.length() - 1, 0, 0, 0);
+        boolean first = true;
 
         for(int i = 0; i < patterns.size(); i++){
             StrView pattern = reversed ? patterns.get(i).reverse() : patterns.get(i);
@@ -77,10 +79,13 @@ public class FuzzyPattern implements FixedPattern{
 
             for(int j = matches.size() - 1; j >= 0; j--){
                 FuzzyMatch m = matches.get(j);
+                m.setLength(m.getLength() - pattern.length() + m.getOverlap());
 
                 if(m.getIndex() == text.length() - 1){
-                    if(match == null || match.getScore() > m.getScore())
+                    if(first || match.getScore() > m.getScore()){
                         match = m;
+                        first = false;
+                    }
 
                     break;
                 }

@@ -23,14 +23,13 @@ public class FuzzyFindTest{
         RepeatingFixedPattern p2 = new RepeatingFixedPattern(m);
 
         Map<StrView, StrView> m2 = new HashMap<>();
-        m.put(new StrView("length"), new StrView("0-3"));
-        m.put(new StrView("pattern"), new StrView("a"));
+        m.put(new StrView("length"), new StrView("0-5"));
+        m.put(new StrView("pattern"), null);
         RepeatingIntervalPattern p3 = new RepeatingIntervalPattern(m);
 
-        List<List<List<Pattern>>> l = Arrays.asList(Arrays.asList(Arrays.asList(p, p3, p2)));
-        List<List<List<Boolean>>> l2 = Arrays.asList(Arrays.asList(Arrays.asList(true, true)));
-        WholePattern w = new WholePattern(l, l2);
-        List<List<List<FuzzyMatch>>> res = w.search(Arrays.asList(Arrays.asList(new StrView("helo**"))));
+        List<List<List<Pattern>>> l = Arrays.asList(Arrays.asList(Arrays.asList(p3, p, p, p3, p3, p2, p3)));
+        WholePattern w = new WholePattern(l);
+        List<List<List<FuzzyMatch>>> res = w.search(Arrays.asList(Arrays.asList(new StrView("heo**"))));
         System.out.println(res.toString());
     }
 }

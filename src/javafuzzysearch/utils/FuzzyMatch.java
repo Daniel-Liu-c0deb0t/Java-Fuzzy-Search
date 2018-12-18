@@ -29,6 +29,10 @@ public class FuzzyMatch{
         this.index = index;
     }
 
+    public void setLength(int length){
+        this.length = length;
+    }
+
     public int getOverlap(){
         return overlap;
     }

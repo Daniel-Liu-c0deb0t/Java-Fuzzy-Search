@@ -34,7 +34,10 @@ public class RepeatingFixedPattern implements FixedPattern{
 
         if(params.containsKey(s)){
             //acceptableChars = ParsingUtils.parseRepeatingPattern(ParsingUtils.parseStr(s));
-            acceptableChars = Utils.uniqueChars(params.get(s));
+            if(params.get(s) == null)
+                acceptableChars = null;
+            else
+                acceptableChars = Utils.uniqueChars(params.get(s));
             requiredParams--;
         }
 
@@ -58,7 +61,7 @@ public class RepeatingFixedPattern implements FixedPattern{
         List<FuzzyMatch> matches = new ArrayList<>();
 
         for(int i = 0; i < length; i++){
-            if(!acceptableChars.contains(text.charAt(i)))
+            if(acceptableChars != null && !acceptableChars.contains(text.charAt(i)))
                 unacceptableChars++;
         }
 
@@ -66,10 +69,10 @@ public class RepeatingFixedPattern implements FixedPattern{
             matches.add(new FuzzyMatch(length - 1, length, length, 0));
 
         for(int i = length; i < text.length(); i++){
-            if(!acceptableChars.contains(text.charAt(i)))
+            if(acceptableChars != null && !acceptableChars.contains(text.charAt(i)))
                 unacceptableChars++;
 
-            if(!acceptableChars.contains(text.charAt(i - length)))
+            if(acceptableChars != null && !acceptableChars.contains(text.charAt(i - length)))
                 unacceptableChars--;
 
             if(unacceptableChars == 0)
@@ -88,7 +91,7 @@ public class RepeatingFixedPattern implements FixedPattern{
             text = text.reverse();
 
         for(int i = 0; i < length; i++){
-            if(!acceptableChars.contains(text.charAt(text.length() - 1 - i)))
+            if(acceptableChars != null && !acceptableChars.contains(text.charAt(text.length() - 1 - i)))
                 return required ? null : new FuzzyMatch(text.length() - 1, 0, 0, 0);
         }
 

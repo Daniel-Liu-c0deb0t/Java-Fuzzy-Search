@@ -2,17 +2,17 @@ package fuzzyfind;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.StrView;
 
 public class WholePattern{
     private List<List<List<Pattern>>> patternList;
-    private List<List<List<Boolean>>> anchored;
 
-    public WholePattern(List<List<List<Pattern>>> patternList, List<List<List<Boolean>>> anchored){
+    public WholePattern(List<List<List<Pattern>>> patternList){
         this.patternList = patternList;
-        this.anchored = anchored;
     }
 
     public List<List<List<FuzzyMatch>>> search(List<List<StrView>> texts){
@@ -23,9 +23,7 @@ public class WholePattern{
             List<StrView> currTexts = texts.get(i);
 
             for(int j = 0; j < currTexts.size(); j++){
-                List<Boolean> currAnchored = anchored.get(i).get(j);
-                List<FuzzyMatch> matches = search(currTexts.get(j),
-                        patternList.get(i).get(j), currAnchored.get(0), currAnchored.get(1));
+                List<FuzzyMatch> matches = search(currTexts.get(j), patternList.get(i).get(j));
                 res.get(i).add(matches);
             }
         }
@@ -33,28 +31,38 @@ public class WholePattern{
         return res;
     }
 
-    private List<FuzzyMatch> search(StrView text, List<Pattern> patterns, boolean anchoredStart, boolean anchoredEnd){
+    private List<FuzzyMatch> search(StrView text, List<Pattern> patterns){
         List<FuzzyMatch> res = new ArrayList<>();
+        List<Pattern> intervalPatterns = new ArrayList<>();
+        Map<Integer, Integer> emptyOptionalMatchIdx = new HashMap<>();
         int start = 0;
-        int prev = -1;
         int i = 0;
 
         while(i < patterns.size()){
             while(i < patterns.size() && !(patterns.get(i) instanceof FixedPattern)){
-                if(prev == -1)
-                    prev = 0;
+                intervalPatterns.add(patterns.get(i));
                 i++;
             }
 
             if(i >= patterns.size()){
-                List<Pattern> repeatingList = patterns.subList(prev, i);
                 List<FuzzyMatch> repeatingMatches =
-                    searchIntervalPatterns(text, start, text.length() - 1, repeatingList);
+                    searchIntervalPatterns(text, start, text.length() - 1, intervalPatterns);
 
                 if(repeatingMatches == null)
                     return null;
 
-                res.addAll(repeatingMatches);
+                for(int m = 0; m < repeatingMatches.size(); m++){
+                    FuzzyMatch match = repeatingMatches.get(m);
+                    res.add(match);
+
+                    if(emptyOptionalMatchIdx.containsKey(m)){
+                        int val = emptyOptionalMatchIdx.get(m);
+
+                        for(int n = 0; n < val; n++)
+                            res.add(new FuzzyMatch(match.getIndex(), 0, 0, 0));
+                    }
+                }
+
                 break;
             }
 
@@ -65,30 +73,41 @@ public class WholePattern{
 
             List<Pattern> subList = patterns.subList(i, j);
 
-            if(i == 0 && anchoredStart){
+            if(i == 0){
                 List<FuzzyMatch> matches = searchFixedPatterns(text, start, text.length() - 1, subList, true);
 
                 if(matches == null)
                     return null;
 
                 res.addAll(matches);
-            }else if(i == patterns.size() - 1 && anchoredEnd){
+            }else if(i == patterns.size() - 1){
                 List<FuzzyMatch> fuzzyMatches = searchFixedPatterns(text, start, text.length() - 1, subList, false);
 
                 if(fuzzyMatches == null)
                     return null;
 
-                if(prev != -1){
+                if(!intervalPatterns.isEmpty()){
                     int endIdx = fuzzyMatches.get(0).getIndex() - fuzzyMatches.get(0).getLength();
 
-                    List<Pattern> repeatingList = patterns.subList(prev, i);
                     List<FuzzyMatch> repeatingMatches =
-                        searchIntervalPatterns(text, start, endIdx, repeatingList);
+                        searchIntervalPatterns(text, start, endIdx, intervalPatterns);
 
                     if(repeatingMatches == null)
                         return null;
 
-                    res.addAll(repeatingMatches);
+                    for(int m = 0; m < repeatingMatches.size(); m++){
+                        FuzzyMatch match = repeatingMatches.get(m);
+                        res.add(match);
+
+                        if(emptyOptionalMatchIdx.containsKey(m)){
+                            int val = emptyOptionalMatchIdx.get(m);
+
+                            for(int n = 0; n < val; n++)
+                                res.add(new FuzzyMatch(match.getIndex(), 0, 0, 0));
+                        }
+                    }
+                    emptyOptionalMatchIdx.clear();
+                    intervalPatterns.clear();
                 }
 
                 res.addAll(fuzzyMatches);
@@ -113,12 +132,10 @@ public class WholePattern{
                         FuzzyMatch startMatch = allMatches.get(l);
                         startMatch.setIndex(start + s.length() - 1 - startMatch.getIndex() + startMatch.getLength() - 1);
 
-                        List<Pattern> repeatingList = null;
                         List<FuzzyMatch> repeatingMatches = null;
 
-                        if(prev != -1){
-                            repeatingList = patterns.subList(prev, i);
-                            repeatingMatches = searchIntervalPatterns(text, start, startMatch.getIndex() - startMatch.getLength(), repeatingList);
+                        if(!intervalPatterns.isEmpty()){
+                            repeatingMatches = searchIntervalPatterns(text, start, startMatch.getIndex() - startMatch.getLength(), intervalPatterns);
 
                             if(repeatingMatches == null)
                                 continue;
@@ -130,8 +147,20 @@ public class WholePattern{
                         if(fuzzyMatches == null)
                             continue;
 
-                        if(prev != -1)
-                            res.addAll(repeatingMatches);
+                        if(!intervalPatterns.isEmpty()){
+                            for(int m = 0; m < repeatingMatches.size(); m++){
+                                FuzzyMatch match = repeatingMatches.get(m);
+                                res.add(match);
+
+                                if(emptyOptionalMatchIdx.containsKey(m)){
+                                    int val = emptyOptionalMatchIdx.get(m);
+
+                                    for(int n = 0; n < val; n++)
+                                        res.add(new FuzzyMatch(match.getIndex(), 0, 0, 0));
+                                }
+                            }
+                            emptyOptionalMatchIdx.clear();
+                        }
 
                         for(int m = i; m < k; m++)
                             res.add(new FuzzyMatch(startMatch.getIndex() - startMatch.getLength(), 0, 0, 0));
@@ -145,14 +174,15 @@ public class WholePattern{
                         return null;
                 }
 
-                if(!foundMatch){
-                    // add previous interval patterns to a list
-                    // add 0 length matches to res
+                if(foundMatch){
+                    intervalPatterns.clear();
+                }else{
+                    emptyOptionalMatchIdx.put(intervalPatterns.size() - 1, j - i);
                 }
             }
 
-            start = res.get(j - 1).getIndex() + 1;
-            prev = j;
+            if(!res.isEmpty())
+                start = res.get(j - 1).getIndex() + 1;
             i = j;
         }
 

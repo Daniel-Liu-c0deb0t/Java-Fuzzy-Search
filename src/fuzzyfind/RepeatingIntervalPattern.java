@@ -29,7 +29,10 @@ public class RepeatingIntervalPattern implements Pattern{
 
         if(params.containsKey(s)){
             //acceptableChars = ParsingUtils.parseRepeatingPattern(ParsingUtils.parseStr(s));
-            acceptableChars = Utils.uniqueChars(params.get(s));
+            if(params.get(s) == null)
+                acceptableChars = null;
+            else
+                acceptableChars = Utils.uniqueChars(params.get(s));
             requiredParams--;
         }
 
@@ -38,7 +41,7 @@ public class RepeatingIntervalPattern implements Pattern{
     }
 
     public boolean isAcceptable(char c){
-        return acceptableChars.contains(c);
+        return acceptableChars == null || acceptableChars.contains(c);
     }
 
     public int getMinLength(){
