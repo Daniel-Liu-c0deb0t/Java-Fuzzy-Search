@@ -1,4 +1,4 @@
-package fuzzyfind;
+package fuzzyfind.patterns;
 
 import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.searchers.CutoffSearcher;

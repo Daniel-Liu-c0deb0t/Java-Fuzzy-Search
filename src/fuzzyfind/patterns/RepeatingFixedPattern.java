@@ -1,4 +1,4 @@
-package fuzzyfind;
+package fuzzyfind.patterns;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -9,12 +9,18 @@ import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.Utils;
 
+import fuzzyfind.parameters.Parameter;
+import fuzzyfind.parameters.IntParameter;
+import fuzzyfind.parameters.StrParameter;
+
 public class RepeatingFixedPattern implements FixedPattern{
+    private StrParameter acceptableCharsParam;
     private Set<Character> acceptableChars;
+    private IntParameter lengthParam;
     private int length;
     private boolean required;
 
-    public RepeatingFixedPattern(Map<StrView, StrView> params){
+    public RepeatingFixedPattern(Map<StrView, Parameter> params){
         int requiredParams = 2;
 
         StrView s = new StrView("required");
@@ -25,19 +31,17 @@ public class RepeatingFixedPattern implements FixedPattern{
         s = new StrView("length");
 
         if(params.containsKey(s)){
-            //length = ParsingUtils.parseInt(params.get(s));
-            length = Integer.parseInt(params.get(s).toString());
+            lengthParam = (IntParameter)params.get(s);
             requiredParams--;
         }
 
         s = new StrView("pattern");
 
         if(params.containsKey(s)){
-            //acceptableChars = ParsingUtils.parseRepeatingPattern(ParsingUtils.parseStr(s));
             if(params.get(s) == null)
-                acceptableChars = null;
+                acceptableCharsParam = null;
             else
-                acceptableChars = Utils.uniqueChars(params.get(s));
+                acceptableCharsParam = (StrParameter)params.get(s);
             requiredParams--;
         }
 
@@ -45,8 +49,12 @@ public class RepeatingFixedPattern implements FixedPattern{
             throw new IllegalArgumentException("Repeating fixed pattern requires " + requiredParams + " arguments!");
     }
 
-    public int getLength(){
-        return length;
+    public void updateParameters(){
+        length = lengthParam.get();
+        if(acceptableCharsParam == null)
+            acceptableChars = null;
+        else
+            acceptableChars = Utils.uniqueChars(acceptableCharsParam.get());
     }
 
     @Override

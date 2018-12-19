@@ -13,6 +13,13 @@ public class StrView implements Comparable<StrView>{
         this.reversed = false;
     }
 
+    public StrView(char[] arr){
+        this.arr = arr;
+        this.start = 0;
+        this.length = arr.length;
+        this.reversed = false;
+    }
+
     public StrView(char[] arr, int start, int length, boolean reversed){
         this.arr = arr;
         this.start = start;

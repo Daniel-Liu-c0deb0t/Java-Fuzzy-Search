@@ -1,4 +1,4 @@
-package fuzzyfind;
+package fuzzyfind.patterns;
 
 import java.util.List;
 import java.util.ArrayList;

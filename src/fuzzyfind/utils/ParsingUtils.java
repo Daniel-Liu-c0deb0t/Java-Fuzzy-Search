@@ -1,4 +1,4 @@
-package fuzzyfind;
+package fuzzyfind.utils;
 
 public class ParsingUtils{
 

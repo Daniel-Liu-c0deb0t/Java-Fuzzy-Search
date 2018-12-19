@@ -1,5 +1,6 @@
 package javafuzzysearch.utils;
 
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Arrays;
@@ -56,5 +57,22 @@ public class Utils{
         }
 
         return length;
+    }
+
+    public static StrView concatenate(List<StrView> strings){
+        int length = 0;
+
+        for(StrView s : strings)
+            length += s.length();
+
+        char[] res = new char[length];
+        int idx = 0;
+
+        for(StrView s : strings){
+            for(int i = 0; i < s.length(); i++)
+                res[idx++] = s.charAt(i);
+        }
+
+        return new StrView(res);
     }
 }
