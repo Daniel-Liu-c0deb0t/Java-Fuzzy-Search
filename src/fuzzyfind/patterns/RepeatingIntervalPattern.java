@@ -3,12 +3,20 @@ package fuzzyfind.patterns;
 import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.Utils;
 
+import fuzzyfind.parameters.Parameter;
+import fuzzyfind.parameters.IntParameter;
+import fuzzyfind.parameters.StrParameter;
+
+import fuzzyfind.utils.ParsingUtils;
+
 import java.util.List;
 import java.util.Set;
 import java.util.Map;
 
 public class RepeatingIntervalPattern implements Pattern{
+    private StrParameter acceptableCharsParam;
     private Set<Character> acceptableChars;
+    private IntParameter minLengthParam, maxLengthParam;
     private int minLength, maxLength;
 
     public RepeatingIntervalPattern(Map<StrView, StrView> params){
@@ -17,39 +25,39 @@ public class RepeatingIntervalPattern implements Pattern{
         StrView s = new StrView("length");
 
         if(params.containsKey(s)){
-            //int[] length = ParsingUtils.parseIntRange(params.get(s));
-            String[] lengthStr = params.get(s).toString().split("-");
-            int[] length = {Integer.parseInt(lengthStr[0]), Integer.parseInt(lengthStr[1])};
-            minLength = length[0];
-            maxLength = length[1];
+            List<StrView> lengths = ParsingUtils.splitInLiteralStr(params.get(s), new StrView("-"));
+            minLengthParam = new IntParameter(ParsingUtils.splitByVars(lengths.get(0)));
+            maxLengthParam = new IntParameter(ParsingUtils.splitByVars(lengths.get(1)));
             requiredParams--;
         }
 
         s = new StrView("pattern");
 
         if(params.containsKey(s)){
-            //acceptableChars = ParsingUtils.parseRepeatingPattern(ParsingUtils.parseStr(s));
             if(params.get(s) == null)
-                acceptableChars = null;
+                acceptableCharsParam = null;
             else
-                acceptableChars = Utils.uniqueChars(params.get(s));
+                acceptableCharsParam = new StrParameter(ParsingUtils.splitByVars(params.get(s)));
             requiredParams--;
         }
 
         if(requiredParams != 0)
-            throw new IllegalArgumentException("Repeating fixed pattern requires " + requiredParams + " arguments!");
+            throw new IllegalArgumentException("Repeating interval pattern requires " + requiredParams + " more arguments!");
+    }
+
+    @Override
+    public void updateParams(){
+        minLength = minLengthParam.get();
+        maxLength = maxLengthParam.get();
+
+        if(acceptableCharsParam == null)
+            acceptableChars = null;
+        else
+            acceptableChars = ParsingUtils.parseCharRanges(acceptableCharsParam.get());
     }
 
     public boolean isAcceptable(char c){
         return acceptableChars == null || acceptableChars.contains(c);
-    }
-
-    public int getMinLength(){
-        return minLength;
-    }
-
-    public int getMaxLength(){
-        return maxLength;
     }
 
     @Override

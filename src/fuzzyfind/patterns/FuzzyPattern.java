@@ -1,9 +1,16 @@
 package fuzzyfind.patterns;
 
 import javafuzzysearch.utils.FuzzyMatch;
+import javafuzzysearch.utils.Location;
 import javafuzzysearch.searchers.CutoffSearcher;
 import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.LengthParam;
+
+import fuzzyfind.parameters.Parameter;
+import fuzzyfind.parameters.FloatParameter;
+import fuzzyfind.parameters.StrParameter;
+
+import fuzzyfind.utils.ParsingUtils;
 
 import java.util.List;
 import java.util.Set;
@@ -14,21 +21,68 @@ import java.util.Collections;
 import java.util.ArrayList;
 
 public class FuzzyPattern implements FixedPattern{
+    private FloatParameter scoreThresholdParam;
+    private FloatParameter minOverlapParam;
     private CutoffSearcher searcher;
+    private List<StrParameter> patternsParam;
     private List<StrView> patterns;
     private List<Set<Integer>> patternEscapeIdx;
-    private List<Set<Integer>> patternEscapeIdxReversed;
     private boolean required;
 
-    public FuzzyPattern(){
+    public FuzzyPattern(Map<StrView, StrView> params){
+        int requiredParams = 2;
+
+        StrView s = new StrView("required");
+
+        if(params.containsKey(s))
+            required = true;
+
+        s = new StrView("edits");
+
+        if(params.containsKey(s))
+            scoreThresholdParam = new FloatParameter(ParsingUtils.splitByVars(params.get(s)));
+        else
+            scoreThresholdParam = new FloatParameter(0.0);
+
+        s = new StrView("min_overlap");
+
+        if(params.containsKey(s))
+            minOverlapParam = new FloatParameter(ParsingUtils.splitByVars(params.get(s)));
+        else
+            minOverlapParam = new FloatParameter(-0.0);
+
+        s = new StrView("patterns");
+
+        if(params.containsKey(s)){
+            patternsParam = new ArrayList<StrParameter>();
+            patternEscapeIdx = new ArrayList<Set<Integer>>();
+            patterns = new ArrayList<StrView>();
+            List<List<StrView>> pairs = ParsingUtils.splitKeyValuePairs(params.get(s));
+
+            for(int i = 0; i < pairs.size(); i++){
+                patternsParam.add(new StrParameter(ParsingUtils.splitByVars(pairs.get(i).get(0))));
+                patternEscapeIdx.add(new HashSet<Integer>());
+            }
+
+            requiredParams--;
+        }
+
+        if(requiredParams != 0)
+            throw new IllegalArgumentException("Fuzzy pattern requires " + requiredParams + " more arguments!");
+
         searcher = new CutoffSearcher();
-        searcher.scoreThreshold(new LengthParam(1));
-        patterns = new ArrayList<StrView>();
-        patterns.add(new StrView("hello"));
-        patternEscapeIdx = new ArrayList<Set<Integer>>();
-        patternEscapeIdx.add(new HashSet<Integer>());
-        patternEscapeIdxReversed = new ArrayList<Set<Integer>>();
-        patternEscapeIdxReversed.add(new HashSet<Integer>());
+    }
+
+    @Override
+    public void updateParams(){
+        searcher.scoreThreshold(ParsingUtils.toLengthParam(scoreThresholdParam.get()));
+        searcher.minOverlap(ParsingUtils.toLengthParam(scoreThresholdParam.get()), Location.END);
+
+        patterns.clear();
+
+        for(int i = 0; i < patternsParam.size(); i++){
+            patterns.add(patternsParam.get(i).get());
+        }
     }
 
     @Override
@@ -40,7 +94,7 @@ public class FuzzyPattern implements FixedPattern{
 
         for(int i = 0; i < patterns.size(); i++){
             StrView pattern = reversed ? patterns.get(i).reverse() : patterns.get(i);
-            Set<Integer> escapeIdx = reversed ? patternEscapeIdxReversed.get(i) : patternEscapeIdx.get(i);
+            Set<Integer> escapeIdx = patternEscapeIdx.get(i);
 
             List<FuzzyMatch> matches = searcher.search(text, pattern, false, new HashSet<Integer>(), escapeIdx);
 
@@ -73,7 +127,7 @@ public class FuzzyPattern implements FixedPattern{
 
         for(int i = 0; i < patterns.size(); i++){
             StrView pattern = reversed ? patterns.get(i).reverse() : patterns.get(i);
-            Set<Integer> escapeIdx = reversed ? patternEscapeIdxReversed.get(i) : patternEscapeIdx.get(i);
+            Set<Integer> escapeIdx = patternEscapeIdx.get(i);
 
             List<FuzzyMatch> matches = searcher.search(text, pattern, false, new HashSet<Integer>(), escapeIdx);
 

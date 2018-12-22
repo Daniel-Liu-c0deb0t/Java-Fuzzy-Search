@@ -17,6 +17,10 @@ public class StrParameter{
             this.references = references;
     }
 
+    public StrParameter(StrView str){
+        this.str = str;
+    }
+
     public StrView get(){
         if(str == null){
             List<StrView> list = new ArrayList<>();
