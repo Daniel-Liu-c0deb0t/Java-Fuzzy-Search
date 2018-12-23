@@ -8,21 +8,29 @@ import fuzzyfind.parameters.IntParameter;
 import fuzzyfind.parameters.StrParameter;
 
 import fuzzyfind.utils.ParsingUtils;
+import fuzzyfind.utils.PatternMatch;
 
 import java.util.List;
 import java.util.Set;
 import java.util.Map;
+import java.util.HashMap;
 
 public class RepeatingIntervalPattern implements Pattern{
     private StrParameter acceptableCharsParam;
     private Set<Character> acceptableChars;
     private IntParameter minLengthParam, maxLengthParam;
     private int minLength, maxLength;
+    private StrView name;
 
     public RepeatingIntervalPattern(Map<StrView, StrView> params){
         int requiredParams = 2;
 
-        StrView s = new StrView("length");
+        StrView s = new StrView("name");
+
+        if(params.containsKey(s))
+            name = params.get(s);
+
+        s = new StrView("length");
 
         if(params.containsKey(s)){
             List<StrView> lengths = ParsingUtils.splitInLiteralStr(params.get(s), new StrView("-"));
@@ -63,5 +71,22 @@ public class RepeatingIntervalPattern implements Pattern{
     @Override
     public boolean isRequired(){
         return true;
+    }
+
+    @Override
+    public StrView getName(){
+        return name;
+    }
+
+    @Override
+    public Map<StrView, StrView> getVars(PatternMatch m){
+        if(name == null)
+            return null;
+
+        Map<StrView, StrView> res = new HashMap<>();
+
+        res.put(Utils.concatenate(name, ".length"), new StrView(m.getLength()));
+
+        return res;
     }
 }

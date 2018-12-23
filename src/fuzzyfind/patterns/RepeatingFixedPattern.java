@@ -4,15 +4,17 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.Map;
+import java.util.HashMap;
 
-import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.StrView;
+import javafuzzysearch.utils.Utils;
 
 import fuzzyfind.parameters.Parameter;
 import fuzzyfind.parameters.IntParameter;
 import fuzzyfind.parameters.StrParameter;
 
 import fuzzyfind.utils.ParsingUtils;
+import fuzzyfind.utils.PatternMatch;
 
 public class RepeatingFixedPattern implements FixedPattern{
     private StrParameter acceptableCharsParam;
@@ -20,6 +22,7 @@ public class RepeatingFixedPattern implements FixedPattern{
     private IntParameter lengthParam;
     private int length;
     private boolean required;
+    private StrView name;
 
     public RepeatingFixedPattern(Map<StrView, StrView> params){
         int requiredParams = 2;
@@ -28,6 +31,11 @@ public class RepeatingFixedPattern implements FixedPattern{
 
         if(params.containsKey(s))
             required = true;
+
+        s = new StrView("name");
+
+        if(params.containsKey(s))
+            name = params.get(s);
 
         s = new StrView("length");
 
@@ -61,7 +69,7 @@ public class RepeatingFixedPattern implements FixedPattern{
     }
 
     @Override
-    public List<FuzzyMatch> searchAll(StrView text, boolean reversed){
+    public List<PatternMatch> searchAll(StrView text, boolean reversed){
         if(length > text.length())
             return null;
 
@@ -69,7 +77,7 @@ public class RepeatingFixedPattern implements FixedPattern{
             text = text.reverse();
 
         int unacceptableChars = 0;
-        List<FuzzyMatch> matches = new ArrayList<>();
+        List<PatternMatch> matches = new ArrayList<>();
 
         for(int i = 0; i < length; i++){
             if(acceptableChars != null && !acceptableChars.contains(text.charAt(i)))
@@ -77,7 +85,7 @@ public class RepeatingFixedPattern implements FixedPattern{
         }
 
         if(unacceptableChars == 0)
-            matches.add(new FuzzyMatch(length - 1, length, length, 0));
+            matches.add(new PatternMatch(length - 1, length, length, 0));
 
         for(int i = length; i < text.length(); i++){
             if(acceptableChars != null && !acceptableChars.contains(text.charAt(i)))
@@ -87,30 +95,47 @@ public class RepeatingFixedPattern implements FixedPattern{
                 unacceptableChars--;
 
             if(unacceptableChars == 0)
-                matches.add(new FuzzyMatch(i, length, length, 0));
+                matches.add(new PatternMatch(i, length, length, 0));
         }
 
         return matches;
     }
 
     @Override
-    public FuzzyMatch matchBest(StrView text, boolean reversed){
+    public PatternMatch matchBest(StrView text, boolean reversed){
         if(length > text.length())
-            return required ? null : new FuzzyMatch(text.length() - 1, 0, 0, 0);
+            return required ? null : new PatternMatch(text.length() - 1, 0, 0, 0);
 
         if(reversed)
             text = text.reverse();
 
         for(int i = 0; i < length; i++){
             if(acceptableChars != null && !acceptableChars.contains(text.charAt(text.length() - 1 - i)))
-                return required ? null : new FuzzyMatch(text.length() - 1, 0, 0, 0);
+                return required ? null : new PatternMatch(text.length() - 1, 0, 0, 0);
         }
 
-        return new FuzzyMatch(text.length() - 1, length, length, 0);
+        return new PatternMatch(text.length() - 1, length, length, 0);
     }
 
     @Override
     public boolean isRequired(){
         return required;
+    }
+
+    @Override
+    public StrView getName(){
+        return name;
+    }
+
+    @Override
+    public Map<StrView, StrView> getVars(PatternMatch m){
+        if(name == null)
+            return null;
+
+        Map<StrView, StrView> res = new HashMap<>();
+
+        res.put(Utils.concatenate(name, ".length"), new StrView(m.getLength()));
+
+        return res;
     }
 }

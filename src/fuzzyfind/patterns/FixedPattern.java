@@ -1,11 +1,12 @@
 package fuzzyfind.patterns;
 
-import javafuzzysearch.utils.FuzzyMatch;
+import fuzzyfind.utils.PatternMatch;
+
 import javafuzzysearch.utils.StrView;
 
 import java.util.List;
 
 public interface FixedPattern extends Pattern{
-    public List<FuzzyMatch> searchAll(StrView text, boolean reversed);
-    public FuzzyMatch matchBest(StrView text, boolean reversed);
+    public List<PatternMatch> searchAll(StrView text, boolean reversed);
+    public PatternMatch matchBest(StrView text, boolean reversed);
 }

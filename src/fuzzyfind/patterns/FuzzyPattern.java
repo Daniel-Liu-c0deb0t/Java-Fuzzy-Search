@@ -5,12 +5,14 @@ import javafuzzysearch.utils.Location;
 import javafuzzysearch.searchers.CutoffSearcher;
 import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.LengthParam;
+import javafuzzysearch.utils.Utils;
 
 import fuzzyfind.parameters.Parameter;
 import fuzzyfind.parameters.FloatParameter;
 import fuzzyfind.parameters.StrParameter;
 
 import fuzzyfind.utils.ParsingUtils;
+import fuzzyfind.utils.PatternMatch;
 
 import java.util.List;
 import java.util.Set;
@@ -28,6 +30,7 @@ public class FuzzyPattern implements FixedPattern{
     private List<StrView> patterns;
     private List<Set<Integer>> patternEscapeIdx;
     private boolean required;
+    private StrView name;
 
     public FuzzyPattern(Map<StrView, StrView> params){
         int requiredParams = 2;
@@ -36,6 +39,11 @@ public class FuzzyPattern implements FixedPattern{
 
         if(params.containsKey(s))
             required = true;
+
+        s = new StrView("name");
+
+        if(params.containsKey(s))
+            name = params.get(s);
 
         s = new StrView("edits");
 
@@ -86,11 +94,11 @@ public class FuzzyPattern implements FixedPattern{
     }
 
     @Override
-    public List<FuzzyMatch> searchAll(StrView text, boolean reversed){
+    public List<PatternMatch> searchAll(StrView text, boolean reversed){
         if(reversed)
             text = text.reverse();
 
-        Map<Integer, FuzzyMatch> map = new HashMap<>();
+        Map<Integer, PatternMatch> map = new HashMap<>();
 
         for(int i = 0; i < patterns.size(); i++){
             StrView pattern = reversed ? patterns.get(i).reverse() : patterns.get(i);
@@ -99,7 +107,7 @@ public class FuzzyPattern implements FixedPattern{
             List<FuzzyMatch> matches = searcher.search(text, pattern, false, new HashSet<Integer>(), escapeIdx);
 
             for(int j = 0; j < matches.size(); j++){
-                FuzzyMatch curr = matches.get(j);
+                PatternMatch curr = new PatternMatch(matches.get(j), i);
                 curr.setLength(curr.getLength() - pattern.length() + curr.getOverlap());
 
                 if(!map.containsKey(curr.getIndex()) || map.get(curr.getIndex()).getScore() > curr.getScore())
@@ -107,7 +115,7 @@ public class FuzzyPattern implements FixedPattern{
             }
         }
 
-        List<FuzzyMatch> list = new ArrayList<>();
+        List<PatternMatch> list = new ArrayList<>();
 
         for(int i : map.keySet())
             list.add(map.get(i));
@@ -118,11 +126,11 @@ public class FuzzyPattern implements FixedPattern{
     }
 
     @Override
-    public FuzzyMatch matchBest(StrView text, boolean reversed){
+    public PatternMatch matchBest(StrView text, boolean reversed){
         if(reversed)
             text = text.reverse();
 
-        FuzzyMatch match = required ? null : new FuzzyMatch(text.length() - 1, 0, 0, 0);
+        PatternMatch match = required ? null : new PatternMatch(text.length() - 1, 0, 0, 0, -1);
         boolean first = true;
 
         for(int i = 0; i < patterns.size(); i++){
@@ -132,7 +140,7 @@ public class FuzzyPattern implements FixedPattern{
             List<FuzzyMatch> matches = searcher.search(text, pattern, false, new HashSet<Integer>(), escapeIdx);
 
             for(int j = matches.size() - 1; j >= 0; j--){
-                FuzzyMatch m = matches.get(j);
+                PatternMatch m = new PatternMatch(matches.get(j), i);
                 m.setLength(m.getLength() - pattern.length() + m.getOverlap());
 
                 if(m.getIndex() == text.length() - 1){
@@ -152,5 +160,26 @@ public class FuzzyPattern implements FixedPattern{
     @Override
     public boolean isRequired(){
         return required;
+    }
+
+    @Override
+    public StrView getName(){
+        return name;
+    }
+
+    @Override
+    public Map<StrView, StrView> getVars(PatternMatch m){
+        if(name == null)
+            return null;
+
+        Map<StrView, StrView> res = new HashMap<>();
+
+        res.put(Utils.concatenate(name, new StrView(".length")), new StrView(m.getLength()));
+
+        int patternIdx = m.getPatternIdx();
+        res.put(Utils.concatenate(name, new StrView(".pattern_idx")), new StrView(patternIdx));
+        res.put(Utils.concatenate(name, new StrView(".pattern")), patternIdx == -1 ? new StrView("") : patterns.get(m.getPatternIdx()));
+
+        return res;
     }
 }

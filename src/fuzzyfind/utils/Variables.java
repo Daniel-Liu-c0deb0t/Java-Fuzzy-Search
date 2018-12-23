@@ -3,6 +3,8 @@ package fuzzyfind.utils;
 import java.util.Map;
 import java.util.HashMap;
 
+import javafuzzysearch.utils.StrView;
+
 public class Variables{
     private Map<StrView, StrView> vars;
     private static Variables global = null;
@@ -13,6 +15,10 @@ public class Variables{
 
     public void add(StrView key, StrView val){
         vars.put(key, val);
+    }
+
+    public void addAll(Map<StrView, StrView> map){
+        vars.putAll(map);
     }
 
     public StrView get(StrView key){
