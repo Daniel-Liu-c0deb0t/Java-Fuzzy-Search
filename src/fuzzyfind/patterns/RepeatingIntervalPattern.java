@@ -33,9 +33,9 @@ public class RepeatingIntervalPattern implements Pattern{
         s = new StrView("length");
 
         if(params.containsKey(s)){
-            List<StrView> lengths = ParsingUtils.splitInLiteralStr(params.get(s), new StrView("-"));
-            minLengthParam = new IntParameter(ParsingUtils.splitByVars(lengths.get(0)));
-            maxLengthParam = new IntParameter(ParsingUtils.splitByVars(lengths.get(1)));
+            int idx = params.get(s).indexOf('-');
+            minLengthParam = new IntParameter(ParsingUtils.splitByVars(params.get(s).substring(0, idx)));
+            maxLengthParam = new IntParameter(ParsingUtils.splitByVars(params.get(s).substring(idx + 1)));
             requiredParams--;
         }
 

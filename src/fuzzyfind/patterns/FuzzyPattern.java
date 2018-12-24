@@ -50,14 +50,14 @@ public class FuzzyPattern implements FixedPattern{
         if(params.containsKey(s))
             scoreThresholdParam = new FloatParameter(ParsingUtils.splitByVars(params.get(s)));
         else
-            scoreThresholdParam = new FloatParameter(0.0);
+            scoreThresholdParam = new FloatParameter(0.0f);
 
         s = new StrView("min_overlap");
 
         if(params.containsKey(s))
             minOverlapParam = new FloatParameter(ParsingUtils.splitByVars(params.get(s)));
         else
-            minOverlapParam = new FloatParameter(-0.0);
+            minOverlapParam = new FloatParameter(-0.0f);
 
         s = new StrView("patterns");
 
@@ -68,7 +68,8 @@ public class FuzzyPattern implements FixedPattern{
             List<List<StrView>> pairs = ParsingUtils.splitKeyValuePairs(params.get(s));
 
             for(int i = 0; i < pairs.size(); i++){
-                patternsParam.add(new StrParameter(ParsingUtils.splitByVars(pairs.get(i).get(0))));
+                patternsParam.add(new StrParameter(ParsingUtils.splitByVars(
+                                ParsingUtils.removeOuterQuotes(pairs.get(i).get(0)))));
                 patternEscapeIdx.add(new HashSet<Integer>());
             }
 

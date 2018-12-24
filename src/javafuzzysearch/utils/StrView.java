@@ -40,6 +40,15 @@ public class StrView implements Comparable<StrView>{
         return substring(i, length);
     }
 
+    public int indexOf(char c){
+        for(int i = 0; i < length; i++){
+            if(charAt(i) == c)
+                return i;
+        }
+
+        return -1;
+    }
+
     public int length(){
         return length;
     }
