@@ -1,8 +1,9 @@
-package javafuzzysearch.utils;
+package fuzzyfind.utils;
 
 import java.util.List;
 
 import javafuzzysearch.utils.Edit;
+import javafuzzysearch.utils.FuzzyMatch;
 
 public class PatternMatch{
     private int index, overlap, length, score, patternIdx;
@@ -69,6 +70,6 @@ public class PatternMatch{
 
     @Override
     public String toString(){
-        return String.format("PatternMatch(index = %d, length = %d, overlap = %d, score = %d)", index, length, overlap, score);
+        return String.format("PatternMatch(index = %d, length = %d, score = %d)", index, length, score);
     }
 }

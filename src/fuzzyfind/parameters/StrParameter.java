@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.Utils;
 
+import fuzzyfind.references.Reference;
+import fuzzyfind.references.StrReference;
+
 public class StrParameter{
     private List<Reference> references;
     private StrView str;

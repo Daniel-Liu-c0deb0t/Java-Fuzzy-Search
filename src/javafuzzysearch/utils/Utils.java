@@ -60,6 +60,9 @@ public class Utils{
     }
 
     public static StrView concatenate(StrView... strings){
+        if(strings.length == 1)
+            return strings[0];
+
         int length = 0;
 
         for(StrView s : strings)
@@ -77,6 +80,9 @@ public class Utils{
     }
 
     public static StrView concatenate(List<StrView> strings){
+        if(strings.size() == 1)
+            return strings.get(0);
+
         int length = 0;
 
         for(StrView s : strings)

@@ -9,7 +9,6 @@ import java.util.HashMap;
 import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.Utils;
 
-import fuzzyfind.parameters.Parameter;
 import fuzzyfind.parameters.IntParameter;
 import fuzzyfind.parameters.StrParameter;
 
@@ -25,7 +24,7 @@ public class RepeatingFixedPattern implements FixedPattern{
     private StrView name;
 
     public RepeatingFixedPattern(Map<StrView, StrView> params){
-        int requiredParams = 2;
+        int requiredParams = 1;
 
         StrView s = new StrView("required");
 
@@ -46,13 +45,8 @@ public class RepeatingFixedPattern implements FixedPattern{
 
         s = new StrView("pattern");
 
-        if(params.containsKey(s)){
-            if(params.get(s) == null)
-                acceptableCharsParam = null;
-            else
-                acceptableCharsParam = new StrParameter(ParsingUtils.splitByVars(params.get(s)));
-            requiredParams--;
-        }
+        if(params.containsKey(s))
+            acceptableCharsParam = new StrParameter(ParsingUtils.splitByVars(params.get(s)));
 
         if(requiredParams != 0)
             throw new IllegalArgumentException("Repeating fixed pattern requires " + requiredParams + " more arguments!");
@@ -134,7 +128,7 @@ public class RepeatingFixedPattern implements FixedPattern{
 
         Map<StrView, StrView> res = new HashMap<>();
 
-        res.put(Utils.concatenate(name, ".length"), new StrView(m.getLength()));
+        res.put(Utils.concatenate(name, new StrView(".length")), new StrView(String.valueOf(m.getLength())));
 
         return res;
     }

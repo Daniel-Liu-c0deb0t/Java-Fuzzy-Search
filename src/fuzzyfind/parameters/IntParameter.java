@@ -2,10 +2,12 @@ package fuzzyfind.parameters;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.StringBuilder;
 
 import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.Utils;
+
+import fuzzyfind.references.Reference;
+import fuzzyfind.references.StrReference;
 
 public class IntParameter{
     private List<Reference> references;
@@ -28,8 +30,12 @@ public class IntParameter{
         }else{
             StringBuilder b = new StringBuilder();
 
-            for(Reference r : references)
-                b.append(r.get().toString());
+            for(Reference r : references){
+                StrView s = r.get();
+
+                for(int i = 0; i < s.length(); i++)
+                    b.append(s.charAt(i));
+            }
 
             return Integer.parseInt(b.toString());
         }

@@ -2,10 +2,12 @@ package fuzzyfind.parameters;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.StringBuilder;
 
 import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.Utils;
+
+import fuzzyfind.references.Reference;
+import fuzzyfind.references.StrReference;
 
 public class FloatParameter{
     private List<Reference> references;
@@ -13,7 +15,7 @@ public class FloatParameter{
 
     public FloatParameter(List<Reference> references){
         if(references.size() == 1 && references.get(0) instanceof StrReference)
-            this.val = Float.parseFloat(referenes.get(0).get().toString());
+            this.val = Float.parseFloat(references.get(0).get().toString());
         else
             this.references = references;
     }
@@ -28,8 +30,12 @@ public class FloatParameter{
         }else{
             StringBuilder b = new StringBuilder();
 
-            for(Reference r : references)
-                b.append(r.get().toString());
+            for(Reference r : references){
+                StrView s = r.get();
+
+                for(int i = 0; i < s.length(); i++)
+                    b.append(s.charAt(i));
+            }
 
             return Float.parseFloat(b.toString());
         }

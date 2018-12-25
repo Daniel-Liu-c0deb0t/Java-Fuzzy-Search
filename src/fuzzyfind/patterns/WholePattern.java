@@ -189,7 +189,7 @@ public class WholePattern{
             }
 
             if(!res.isEmpty())
-                start = res.get(j - 1).getIndex() + 1;
+                start = res.get(res.size() - 1).getIndex() + 1;
             i = j;
         }
 

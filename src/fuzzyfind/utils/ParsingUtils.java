@@ -9,7 +9,6 @@ import fuzzyfind.references.VarReference;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.StringBuilder;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -21,14 +20,14 @@ public class ParsingUtils{
         if(Math.abs(n) < 1.0f)
             percentage = true;
 
-        if(Float.floatToIntBits(n) < 0.0f)
+        if(Float.floatToIntBits(n) < 0)
             lengthMinus = true;
 
         return new LengthParam(n, percentage, lengthMinus);
     }
 
     public static StrView removeOuterQuotes(StrView s){
-        s = s.subtring(1, s.length() - 1);
+        s = s.substring(1, s.length() - 1);
 
         StringBuilder b = new StringBuilder();
         boolean escaped = false;
@@ -59,7 +58,7 @@ public class ParsingUtils{
             }
         }
 
-        return new StrView(b.toCharArray());
+        return new StrView(b);
     }
 
     public static List<Reference> splitByVars(StrView s){
@@ -76,10 +75,10 @@ public class ParsingUtils{
                     curr.append(c);
                 }else{
                     if(curr.length() > 0)
-                        res.add(new StrReference(new StrView(curr.toCharArray())));
+                        res.add(new StrReference(new StrView(curr)));
 
                     inVar = !inVar;
-                    curr.clear();
+                    curr.setLength(0);
                     curr.append(c);
                 }
 
@@ -88,10 +87,10 @@ public class ParsingUtils{
                 if(c == '%'){
                     if(inVar){
                         if(curr.length() > 0)
-                            res.add(new VarReference(new StrView(curr.toCharArray())));
+                            res.add(new VarReference(new StrView(curr)));
 
                         inVar = false;
-                        curr.clear();
+                        curr.setLength(0);
                     }else{
                         escaped = true;
                     }
@@ -102,7 +101,7 @@ public class ParsingUtils{
         }
 
         if(curr.length() > 0){
-            res.add(new StrReference(new StrView(curr.toCharArray())));
+            res.add(new StrReference(new StrView(curr)));
         }
 
         return res;
