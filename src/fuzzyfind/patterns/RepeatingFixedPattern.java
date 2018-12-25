@@ -10,13 +10,11 @@ import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.Utils;
 
 import fuzzyfind.parameters.IntParameter;
-import fuzzyfind.parameters.StrParameter;
 
 import fuzzyfind.utils.ParsingUtils;
 import fuzzyfind.utils.PatternMatch;
 
 public class RepeatingFixedPattern implements FixedPattern{
-    private StrParameter acceptableCharsParam;
     private Set<Character> acceptableChars;
     private IntParameter lengthParam;
     private int length;
@@ -46,7 +44,7 @@ public class RepeatingFixedPattern implements FixedPattern{
         s = new StrView("pattern");
 
         if(params.containsKey(s))
-            acceptableCharsParam = new StrParameter(ParsingUtils.splitByVars(params.get(s)));
+            acceptableChars = ParsingUtils.parseCharRanges(params.get(s));
 
         if(requiredParams != 0)
             throw new IllegalArgumentException("Repeating fixed pattern requires " + requiredParams + " more arguments!");
@@ -55,11 +53,6 @@ public class RepeatingFixedPattern implements FixedPattern{
     @Override
     public void updateParams(){
         length = lengthParam.get();
-
-        if(acceptableCharsParam == null)
-            acceptableChars = null;
-        else
-            acceptableChars = ParsingUtils.parseCharRanges(acceptableCharsParam.get());
     }
 
     @Override

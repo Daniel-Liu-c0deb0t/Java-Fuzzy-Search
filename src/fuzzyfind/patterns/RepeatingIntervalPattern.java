@@ -4,7 +4,6 @@ import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.Utils;
 
 import fuzzyfind.parameters.IntParameter;
-import fuzzyfind.parameters.StrParameter;
 
 import fuzzyfind.utils.ParsingUtils;
 import fuzzyfind.utils.PatternMatch;
@@ -15,7 +14,6 @@ import java.util.Map;
 import java.util.HashMap;
 
 public class RepeatingIntervalPattern implements Pattern{
-    private StrParameter acceptableCharsParam;
     private Set<Character> acceptableChars;
     private IntParameter minLengthParam, maxLengthParam;
     private int minLength, maxLength;
@@ -41,7 +39,7 @@ public class RepeatingIntervalPattern implements Pattern{
         s = new StrView("pattern");
 
         if(params.containsKey(s))
-            acceptableCharsParam = new StrParameter(ParsingUtils.splitByVars(params.get(s)));
+            acceptableChars = ParsingUtils.parseCharRanges(params.get(s));
 
         if(requiredParams != 0)
             throw new IllegalArgumentException("Repeating interval pattern requires " + requiredParams + " more arguments!");
@@ -51,11 +49,6 @@ public class RepeatingIntervalPattern implements Pattern{
     public void updateParams(){
         minLength = minLengthParam.get();
         maxLength = maxLengthParam.get();
-
-        if(acceptableCharsParam == null)
-            acceptableChars = null;
-        else
-            acceptableChars = ParsingUtils.parseCharRanges(acceptableCharsParam.get());
     }
 
     public boolean isAcceptable(char c){

@@ -40,7 +40,8 @@ public class FuzzyFindTest{
         RepeatingIntervalPattern p3 = new RepeatingIntervalPattern(m2);
 
         List<List<List<Pattern>>> l = Arrays.asList(Arrays.asList(Arrays.asList(p, p3), Arrays.asList(p4)));
-        WholePattern w = new WholePattern(l);
+        List<List<Integer>> idx = Arrays.asList(Arrays.asList(1, 2));
+        WholePattern w = new WholePattern(l, idx);
         List<List<List<PatternMatch>>> res = w.search(Arrays.asList(Arrays.asList(new StrView("worl**"), new StrView("world"))));
         System.out.println(res.toString());
     }
