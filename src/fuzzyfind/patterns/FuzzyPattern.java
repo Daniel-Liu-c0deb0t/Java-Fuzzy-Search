@@ -42,7 +42,7 @@ public class FuzzyPattern implements FixedPattern{
         s = new StrView("name");
 
         if(params.containsKey(s))
-            name = params.get(s);
+            name = ParsingUtils.removeOuterQuotes(params.get(s));
 
         s = new StrView("edits");
 
@@ -64,7 +64,7 @@ public class FuzzyPattern implements FixedPattern{
             patternsParam = new ArrayList<StrParameter>();
             patternEscapeIdx = new ArrayList<Set<Integer>>();
             patterns = new ArrayList<StrView>();
-            List<List<StrView>> pairs = ParsingUtils.splitKeyValuePairs(params.get(s));
+            List<List<StrView>> pairs = ParsingUtils.splitKeyValuePairs(ParsingUtils.resolveStr(params.get(s)));
 
             for(int i = 0; i < pairs.size(); i++){
                 patternsParam.add(new StrParameter(ParsingUtils.splitByVars(

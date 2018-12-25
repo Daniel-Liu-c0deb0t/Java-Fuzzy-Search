@@ -12,6 +12,11 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
 
+import java.nio.file.Paths;
+import java.nio.file.Files;
+
+import java.io.IOException;
+
 public class ParsingUtils{
     public static LengthParam toLengthParam(float n){
         boolean percentage = false;
@@ -24,6 +29,23 @@ public class ParsingUtils{
             lengthMinus = true;
 
         return new LengthParam(n, percentage, lengthMinus);
+    }
+
+    public static StrView resolveStr(StrView s){
+        if(s.charAt(0) == 'f'){
+            String path = removeOuterQuotes(s.substring(1)).toString();
+            String data = null;
+
+            try{
+                data = new String(Files.readAllBytes(Paths.get(path)));
+            }catch(IOException e){
+                e.printStackTrace();
+            }
+
+            return new StrView(data);
+        }else{
+            return removeOuterQuotes(s);
+        }
     }
 
     public static StrView removeOuterQuotes(StrView s){

@@ -25,7 +25,7 @@ public class RepeatingIntervalPattern implements Pattern{
         StrView s = new StrView("name");
 
         if(params.containsKey(s))
-            name = params.get(s);
+            name = ParsingUtils.removeOuterQuotes(params.get(s));
 
         s = new StrView("length");
 
@@ -39,7 +39,7 @@ public class RepeatingIntervalPattern implements Pattern{
         s = new StrView("pattern");
 
         if(params.containsKey(s))
-            acceptableChars = ParsingUtils.parseCharRanges(params.get(s));
+            acceptableChars = ParsingUtils.parseCharRanges(ParsingUtils.resolveStr(params.get(s)));
 
         if(requiredParams != 0)
             throw new IllegalArgumentException("Repeating interval pattern requires " + requiredParams + " more arguments!");

@@ -32,7 +32,7 @@ public class RepeatingFixedPattern implements FixedPattern{
         s = new StrView("name");
 
         if(params.containsKey(s))
-            name = params.get(s);
+            name = ParsingUtils.removeOuterQuotes(params.get(s));
 
         s = new StrView("length");
 
@@ -44,7 +44,7 @@ public class RepeatingFixedPattern implements FixedPattern{
         s = new StrView("pattern");
 
         if(params.containsKey(s))
-            acceptableChars = ParsingUtils.parseCharRanges(params.get(s));
+            acceptableChars = ParsingUtils.parseCharRanges(ParsingUtils.resolveStr(params.get(s)));
 
         if(requiredParams != 0)
             throw new IllegalArgumentException("Repeating fixed pattern requires " + requiredParams + " more arguments!");

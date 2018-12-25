@@ -19,24 +19,24 @@ public class FuzzyFindTest{
         Map<StrView, StrView> m = new HashMap<>();
         m.put(new StrView("edits"), new StrView("1"));
         m.put(new StrView("required"), new StrView(""));
-        m.put(new StrView("name"), new StrView("f1"));
-        m.put(new StrView("patterns"), new StrView("\"hello\";\"world\""));
+        m.put(new StrView("name"), new StrView("\"f1\""));
+        m.put(new StrView("patterns"), new StrView("f\"test_patterns.txt\""));
         FuzzyPattern p = new FuzzyPattern(m);
 
         Map<StrView, StrView> m3 = new HashMap<>();
         m3.put(new StrView("edits"), new StrView("0"));
-        m3.put(new StrView("patterns"), new StrView("\"%f1.pattern%\""));
+        m3.put(new StrView("patterns"), new StrView("\"\\\"%f1.pattern%\\\"\""));
         FuzzyPattern p4 = new FuzzyPattern(m3);
 
         Map<StrView, StrView> m1 = new HashMap<>();
         m1.put(new StrView("length"), new StrView("2"));
-        m1.put(new StrView("pattern"), new StrView("*"));
+        m1.put(new StrView("pattern"), new StrView("\"*\""));
         m1.put(new StrView("required"), new StrView(""));
         RepeatingFixedPattern p2 = new RepeatingFixedPattern(m1);
 
         Map<StrView, StrView> m2 = new HashMap<>();
         m2.put(new StrView("length"), new StrView("0-10"));
-        m2.put(new StrView("pattern"), new StrView("a-z*"));
+        m2.put(new StrView("pattern"), new StrView("\"a-z*\""));
         RepeatingIntervalPattern p3 = new RepeatingIntervalPattern(m2);
 
         List<List<List<Pattern>>> l = Arrays.asList(Arrays.asList(Arrays.asList(p, p3), Arrays.asList(p4)));
