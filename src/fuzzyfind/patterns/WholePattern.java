@@ -340,4 +340,8 @@ public class WholePattern{
 
         return matches;
     }
+
+    public int getLength(int i){
+        return patterns.get(i).size();
+    }
 }

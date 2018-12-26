@@ -2,6 +2,7 @@ package fuzzyfind.utils;
 
 import javafuzzysearch.utils.LengthParam;
 import javafuzzysearch.utils.StrView;
+import javafuzzysearch.utils.Utils;
 
 import fuzzyfind.references.Reference;
 import fuzzyfind.references.StrReference;
@@ -14,8 +15,6 @@ import java.util.HashSet;
 
 import java.nio.file.Paths;
 import java.nio.file.Files;
-
-import java.io.IOException;
 
 public class ParsingUtils{
     public static LengthParam toLengthParam(float n){
@@ -47,8 +46,9 @@ public class ParsingUtils{
 
             try{
                 data = new String(Files.readAllBytes(Paths.get(path)));
-            }catch(IOException e){
+            }catch(Exception e){
                 e.printStackTrace();
+                System.exit(0);
             }
 
             return new StrView(data);
@@ -213,6 +213,50 @@ public class ParsingUtils{
 
         for(StrView line : lines){
             res.add(splitOutsideStr(line, ':'));
+        }
+
+        return res;
+    }
+
+    public static StrView removeWhitespace(StrView s){
+        return Utils.concatenate(splitOutsideStr(s, ' ', '\t'));
+    }
+
+    public static int nextIdx(StrView s, int idx, char c){
+
+    }
+
+    public static List<Pattern> parsePatterns(StrView s){
+        List<Pattern> res = new ArrayList<>();
+        int startIdx = 1;
+
+        while(startIdx < s.length()){
+            int endIdx = nextIdx(s, startIdx, '}');
+            char type = s.charAt(startIdx);
+            Map<StrView, StrView> paramMap = new HashMap<>();
+
+            List<StrView> params = splitOutsideStr(s.substring(startIdx + 1, endIdx), ',');
+
+            for(StrView param : params){
+                int idx = param.indexOf('=');
+
+                if(idx == -1)
+                    paramMap.put(param, null);
+                else
+                    paramMap.put(param.substring(0, idx), param.substring(idx + 1));
+            }
+
+            if(type == 'f'){
+                res.add(new FuzzyPattern(paramMap));
+            }else if(type == 'r'){
+                res.add(new RepeatingFixedPattern(paramMap));
+            }else if(type == 'i'){
+                res.add(new RepeatingIntervalPattern(paramMap));
+            }else{
+                throw new IllegalArgumentException(type + " is not a valid pattern type!");
+            }
+
+            startIdx = endIdx + 2;
         }
 
         return res;

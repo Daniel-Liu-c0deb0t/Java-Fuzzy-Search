@@ -80,12 +80,16 @@ public class StrView implements Comparable<StrView>{
 
     @Override
     public String toString(){
-        char[] res = new char[length];
+        if(reversed){
+            char[] res = new char[length];
 
-        for(int i = 0; i < length; i++)
-            res[i] = charAt(i);
+            for(int i = 0; i < length; i++)
+                res[i] = charAt(i);
 
-        return new String(res);
+            return new String(res);
+        }else{
+            return new String(arr, start, length);
+        }
     }
 
     @Override
