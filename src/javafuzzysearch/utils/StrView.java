@@ -57,6 +57,15 @@ public class StrView implements Comparable<StrView>{
         return -1;
     }
 
+    public int lastIndexOf(char c){
+        for(int i = length - 1; i >= 0; i--){
+            if(charAt(i) == c)
+                return i;
+        }
+
+        return -1;
+    }
+
     public int length(){
         return length;
     }

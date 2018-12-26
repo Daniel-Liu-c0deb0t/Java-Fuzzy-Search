@@ -30,6 +30,10 @@ public class FuzzyPattern implements FixedPattern{
     private List<Set<Integer>> patternEscapeIdx;
     private boolean required;
     private StrView name;
+    private StrParameter selector;
+    private Map<StrView, List<Integer>> patternNames;
+    private List<StrView> patternNameList;
+    private List<Integer> patternToIdx;
 
     public FuzzyPattern(Map<StrView, StrView> params){
         int requiredParams = 1;
@@ -64,11 +68,33 @@ public class FuzzyPattern implements FixedPattern{
             patternsParam = new ArrayList<StrParameter>();
             patternEscapeIdx = new ArrayList<Set<Integer>>();
             patterns = new ArrayList<StrView>();
-            List<List<StrView>> pairs = ParsingUtils.splitKeyValuePairs(ParsingUtils.resolveStr(params.get(s)));
+            patternToIdx = new ArrayList<Integer>();
+            patternNames = new HashMap<StrView, List<Integer>>();
+            patternNameList = new ArrayList<StrView>();
+
+            StrView[] str = ParsingUtils.resolveStrWithSelector(params.get(s));
+            List<List<StrView>> pairs = ParsingUtils.splitKeyValuePairs(str[0]);
+
+            if(str[1] != null)
+                selector = new StrParameter(ParsingUtils.splitByVars(str[1]));
 
             for(int i = 0; i < pairs.size(); i++){
+                List<StrView> pair = pairs.get(i);
                 patternsParam.add(new StrParameter(ParsingUtils.splitByVars(
-                                ParsingUtils.removeOuterQuotes(pairs.get(i).get(0)))));
+                                ParsingUtils.removeOuterQuotes(pair.get(pair.size() - 1)))));
+
+                if(pair.size() > 1){
+                    StrView patternName = ParsingUtils.removeOuterQuotes(pair.get(0));
+
+                    if(!patternNames.containsKey(patternName))
+                        patternNames.put(patternName, new ArrayList<Integer>());
+
+                    patternNames.get(patternName).add(i);
+                    patternNameList.add(patternName);
+                }else{
+                    patternNameList.add(new StrView(""));
+                }
+
                 patternEscapeIdx.add(new HashSet<Integer>());
             }
 
@@ -87,9 +113,31 @@ public class FuzzyPattern implements FixedPattern{
         searcher.minOverlap(ParsingUtils.toLengthParam(minOverlapParam.get()), Location.END);
 
         patterns.clear();
+        patternToIdx.clear();
 
-        for(int i = 0; i < patternsParam.size(); i++){
-            patterns.add(patternsParam.get(i).get());
+        if(selector == null){
+            for(int i = 0; i < patternsParam.size(); i++){
+                patterns.add(patternsParam.get(i).get());
+                patternToIdx.add(i);
+            }
+        }else{
+            StrView selected = selector.get();
+
+            if(patternNames.containsKey(selected)){
+                List<Integer> idx = patternNames.get(selected);
+
+                for(int i : idx){
+                    patterns.add(patternsParam.get(i).get());
+                    patternToIdx.add(i);
+                }
+            }else{
+                int idx = Integer.parseInt(selected.toString());
+
+                if(idx >= 0){
+                    patterns.add(patternsParam.get(idx).get());
+                    patternToIdx.add(idx);
+                }
+            }
         }
     }
 
@@ -107,7 +155,7 @@ public class FuzzyPattern implements FixedPattern{
             List<FuzzyMatch> matches = searcher.search(text, pattern, false, new HashSet<Integer>(), escapeIdx);
 
             for(int j = 0; j < matches.size(); j++){
-                PatternMatch curr = new PatternMatch(matches.get(j), i);
+                PatternMatch curr = new PatternMatch(matches.get(j), patternToIdx.get(i));
                 curr.setIndex(Math.max(Math.min(curr.getIndex(), text.length() - 1), 0));
                 curr.setLength(curr.getLength() - pattern.length() + curr.getOverlap());
 
@@ -141,7 +189,7 @@ public class FuzzyPattern implements FixedPattern{
             List<FuzzyMatch> matches = searcher.search(text, pattern, false, new HashSet<Integer>(), escapeIdx);
 
             for(int j = matches.size() - 1; j >= 0; j--){
-                PatternMatch m = new PatternMatch(matches.get(j), i);
+                PatternMatch m = new PatternMatch(matches.get(j), patternToIdx.get(i));
                 m.setIndex(Math.max(Math.min(m.getIndex(), text.length() - 1), 0));
                 m.setLength(m.getLength() - pattern.length() + m.getOverlap());
 
@@ -180,7 +228,10 @@ public class FuzzyPattern implements FixedPattern{
 
         int patternIdx = m.getPatternIdx();
         res.put(Utils.concatenate(name, new StrView(".pattern_idx")), new StrView(String.valueOf(patternIdx)));
-        res.put(Utils.concatenate(name, new StrView(".pattern")), patternIdx == -1 ? new StrView("") : patterns.get(m.getPatternIdx()));
+        res.put(Utils.concatenate(name, new StrView(".pattern_name")),
+                patternIdx == -1 ? new StrView("") : patternNameList.get(m.getPatternIdx()));
+        res.put(Utils.concatenate(name, new StrView(".pattern")),
+                patternIdx == -1 ? new StrView("") : patterns.get(m.getPatternIdx()));
 
         return res;
     }

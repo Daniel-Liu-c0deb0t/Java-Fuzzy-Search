@@ -25,7 +25,7 @@ public class FuzzyFindTest{
 
         Map<StrView, StrView> m3 = new HashMap<>();
         m3.put(new StrView("edits"), new StrView("0"));
-        m3.put(new StrView("patterns"), new StrView("\"\\\"%f1.pattern%\\\"\""));
+        m3.put(new StrView("patterns"), new StrView("f\"test_patterns.txt\"[%f1.pattern_name%]"));
         FuzzyPattern p4 = new FuzzyPattern(m3);
 
         Map<StrView, StrView> m1 = new HashMap<>();

@@ -31,6 +31,15 @@ public class ParsingUtils{
         return new LengthParam(n, percentage, lengthMinus);
     }
 
+    public static StrView[] resolveStrWithSelector(StrView s){
+        if(s.charAt(s.length() - 1) == ']'){
+            int idx = s.lastIndexOf('[');
+            return new StrView[]{resolveStr(s.substring(0, idx)), s.substring(idx + 1, s.length() - 1)};
+        }else{
+            return new StrView[]{resolveStr(s), null};
+        }
+    }
+
     public static StrView resolveStr(StrView s){
         if(s.charAt(0) == 'f'){
             String path = removeOuterQuotes(s.substring(1)).toString();
@@ -169,6 +178,7 @@ public class ParsingUtils{
 
         List<StrView> res = new ArrayList<>();
         boolean inStr = false;
+        boolean inBrackets = false;
         boolean escaped = false;
         int prev = 0;
 
@@ -182,7 +192,9 @@ public class ParsingUtils{
                     escaped = true;
                 }else if(c == '"'){
                     inStr = !inStr;
-                }else if(!inStr && set.contains(c)){
+                }else if(!inStr && ((!inBrackets && c == '[') || (inBrackets && c == ']'))){
+                    inBrackets = !inBrackets;
+                }else if(!inStr && !inBrackets && set.contains(c)){
                     res.add(s.substring(prev, i));
                     prev = i + 1;
                 }
