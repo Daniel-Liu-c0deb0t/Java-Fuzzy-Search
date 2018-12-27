@@ -21,9 +21,20 @@ import java.util.Map;
 import java.util.HashMap;
 
 import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.nio.file.Files;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 public class ParsingUtils{
     public static LengthParam toLengthParam(float n){
@@ -325,5 +336,96 @@ public class ParsingUtils{
             return null;
         else
             return lines;
+    }
+
+    public static char parseChar(String s){
+        if(s.length() == 1){
+            return s.charAt(0);
+        }else{
+            if(s.charAt(0) == '\\'){
+                char c = s.charAt(1);
+
+                if(c == 'n')
+                    return '\n';
+                else if(c == 't')
+                    return '\t';
+                else if(c == 'r')
+                    return '\r';
+                else if(c == '\\')
+                    return '\\';
+                else if(c == '"')
+                    return '"';
+                else
+                    throw new IllegalArgumentException(s + " is not a proper character!");
+            }else{
+                throw new IllegalArgumentException(s + " is not a proper character!");
+            }
+        }
+    }
+
+    public static List<String> appendBeforePathNames(List<String> paths, String s){
+        List<String> res = new ArrayList<>();
+
+        for(String path : paths){
+            Path p = Paths.get(path);
+            String fileName = p.getFileName().toString();
+            String dir = p.getParent().toString();
+
+            res.add(dir + s + fileName);
+        }
+
+        return res;
+    }
+
+    public static boolean isGzip(String path){
+        if(path.endsWith(".gzip") || path.endsWith(".gz"))
+            return true;
+
+        return false;
+    }
+
+    public static BufferedReader getReader(String path, boolean gzip) throws Exception{
+        gzip = gzip || isGzip(path);
+
+        if(gzip){
+            if(path.equals("sysin")){
+                return new BufferedReader(new InputStreamReader(new GZIPInputStream(System.in)));
+            }else{
+                return new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(path))));
+            }
+        }else{
+            if(path.equals("sysin")){
+                return new BufferedReader(new InputStreamReader(System.in));
+            }else{
+                return new BufferedReader(new FileReader(path));
+            }
+        }
+    }
+
+    public static BufferedWriter getWriter(String path, boolean gzip) throws Exception{
+        gzip = gzip || isGzip(path);
+
+        Path parent = Paths.get(path).getParent();
+
+        if(parent != null)
+            Files.createDirectories(parent);
+
+        if(gzip){
+            if(path.equals("sysout")){
+                return new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(System.out)));
+            }else if(path.equals("syserr")){
+                return new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(System.err)));
+            }else{
+                return new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(path))));
+            }
+        }else{
+            if(path.equals("sysout")){
+                return new BufferedWriter(new OutputStreamWriter(System.out));
+            }else if(path.equals("syserr")){
+                return new BufferedWriter(new OutputStreamWriter(System.err));
+            }else{
+                return new BufferedWriter(new FileWriter(path));
+            }
+        }
     }
 }

@@ -74,111 +74,99 @@ public class PatternMatcher{
         patterns = new WholePattern(patternList, idxList);
     }
 
-    public void match(List<String> inputPaths, List<String> outputPaths, char delimiter){
+    public void match(List<String> inputPaths, boolean gzipInput, List<String> matchedOutputPaths, List<String> unmatchedOutputPaths, boolean gzipOutput, Character delimiter){
         List<BufferedReader> inputReaders = new ArrayList<>();
-        List<StrParameter> outputWriterPaths = new ArrayList<>();
-
-        for(int i = 0; i < inputPaths.size(); i++){
-            try{
-                BufferedReader inputReader = Files.newBufferedReader(Paths.get(inputPaths.get(i)));
-            }catch(Exception e){
-                e.printStackTrace();
-
-                if(inputReader != null)
-                    inputReader.close();
-
-                for(BufferedReader r : inputReaders)
-                    r.close();
-
-                System.exit(1);
-            }
-
-            StrParameter outputPathParam = new StrParameter(ParsingUtils.splitByVars(new StrView(outputPaths.get(i))));
-
-            inputReaders.add(inputReader);
-            outputWriterPaths.add(outputPathParam);
-        }
-
+        List<StrParameter> matchedOutputParams = new ArrayList<>();
+        List<BufferedWriter> unmatchedWriters = new ArrayList<>();
         Map<StrView, BufferedWriter> cachedWriters = new HashMap<>();
 
-        while_loop:
-        while(true){
-            List<List<StrView>> texts = new ArrayList<>();
+        try{
+            for(int i = 0; i < inputPaths.size(); i++){
+                BufferedReader inputReader = ParsingUtils.getReader(inputPaths.get(i), gzipInput);
+                StrParameter matchedOutputParam = new StrParameter(ParsingUtils.splitByVars(new StrView(matchedOutputPaths.get(i))));
 
-            for(int i = 0; i < inputReaders.size(); i++){
-                List<StrView> currTexts = null;
+                inputReaders.add(inputReader);
+                matchedOutputParams.add(matchedOutputParam);
 
-                try{
-                    currTexts = ParsingUtils.read(inputReaders.get(i), delimiter, patterns.getLength(i));
-                }catch(Exception e){
-                    e.printStackTrace();
-
-                    for(BufferedReader r : inputReaders)
-                        r.close();
-
-                    for(BufferedWriter w : cachedWriters.values())
-                        w.close();
-
-                    System.exit(1);
+                if(unmatchedOutputPaths != null){
+                    BufferedWriter unmatchedWriter = ParsingUtils.getWriter(unmatchedOutputPaths.get(i), gzipOutput);
+                    unmatchedWriters.add(unmatchedWriter);
                 }
-
-                if(currTexts == null)
-                    break while_loop;
-
-                texts.add(currTexts);
             }
 
-            List<List<List<PatternMatch>>> matches = patterns.search(texts);
+            while_loop:
+            while(true){
+                List<List<StrView>> texts = new ArrayList<>();
 
-            if(matches == null)
-                continue;
+                for(int i = 0; i < inputReaders.size(); i++){
+                    List<StrView> currTexts = ParsingUtils.read(inputReaders.get(i), delimiter, patterns.getLength(i));
 
-            for(int i = 0; i < matches.size(); i++){
-                StrView path = outputWriterPaths.get(i).get();
-                BufferedWriter w = null;
+                    if(currTexts == null)
+                        break while_loop;
 
-                if(cachedWriters.containsKey(path)){
-                    w = cachedWriters.get(path);
-                }else{
-                    try{
-                        w = Files.newBufferedWriter(Paths.get(path.toString()));
-                    }catch(Exception e){
-                        e.printStackTrace();
+                    texts.add(currTexts);
+                }
 
-                        if(w != null)
-                            w.close();
+                List<List<List<PatternMatch>>> matches = patterns.search(texts);
 
-                        for(BufferedReader r : inputReaders)
-                            r.close();
+                if(matches == null){
+                    for(int i = 0; i < unmatchedWriters.size(); i++){
+                        BufferedWriter w = unmatchedWriters.get(i);
+                        List<StrView> currTexts = texts.get(i);
 
-                        for(BufferedWriter writer : cachedWriters.values())
-                            writer.close();
+                        for(StrView text : currTexts){
+                            w.write(text.toString());
 
-                        System.exit(1);
+                            if(delimiter != null)
+                                w.write(delimiter);
+                        }
                     }
 
-                    cachedWriters.put(path, w);
+                    continue;
                 }
 
-                List<StrView> currTexts = texts.get(i);
-                List<List<PatternMatch>> currMatches = matches.get(i);
-                List<List<Pattern>> currPatterns = patternList.get(i);
+                for(int i = 0; i < matches.size(); i++){
+                    StrView path = matchedOutputParams.get(i).get();
+                    BufferedWriter w = null;
 
-                for(int j = 0; j < currTexts.size(); j++){
-                    StringBuilder b = trimText(currTexts.get(j), currMatches.get(j), currPatterns.get(j));
-                    w.append(b);
+                    if(cachedWriters.containsKey(path)){
+                        w = cachedWriters.get(path);
+                    }else{
+                        w = ParsingUtils.getWriter(path.toString(), gzipOutput);
+                        cachedWriters.put(path, w);
+                    }
 
-                    if(j < currTexts.size() - 1)
-                        w.write(delimiter);
+                    List<StrView> currTexts = texts.get(i);
+                    List<List<PatternMatch>> currMatches = matches.get(i);
+                    List<List<Pattern>> currPatterns = patternList.get(i);
+
+                    for(int j = 0; j < currTexts.size(); j++){
+                        StringBuilder b = trimText(currTexts.get(j), currMatches.get(j), currPatterns.get(j));
+                        w.append(b);
+
+                        if(delimiter != null)
+                            w.write(delimiter);
+                    }
                 }
             }
+        }catch(Exception e){
+            e.printStackTrace();
+        }finally{
+            for(BufferedReader r : inputReaders){
+                if(r != null)
+                    r.close();
+            }
+
+            for(BufferedWriter w : cachedWriters.values()){
+                if(w != null)
+                    w.close();
+            }
+
+            for(BufferedWriter w : unmatchedWriters){
+                if(w != null)
+                    w.close();
+            }
         }
-
-        for(BufferedReader r : inputReaders)
-            r.close();
-
-        for(BufferedWriter w : cachedWriters.values())
-            w.close();
     }
 
     private StringBuilder trimText(StrView text, List<PatternMatch> matches, List<Pattern> currPatterns){
