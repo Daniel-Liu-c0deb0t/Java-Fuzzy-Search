@@ -26,61 +26,54 @@ public class PatternMatcher{
     private List<List<List<Pattern>>> patternList;
 
     public PatternMatcher(List<String> paths){
-        patternList = new ArrayList<>();
-        List<List<Integer>> idxList = new ArrayList<>();
+        try{
+            patternList = new ArrayList<>();
+            List<List<Integer>> idxList = new ArrayList<>();
 
-        for(String path : paths){
-            List<List<Pattern>> currPatternList = new ArrayList<>();
-            List<Integer> currIdxList = new ArrayList<>();
-            BufferedReader r = null;
+            for(String path : paths){
+                List<List<Pattern>> currPatternList = new ArrayList<>();
+                List<Integer> currIdxList = new ArrayList<>();
+                BufferedReader r = Files.newBufferedReader(Paths.get(path));
 
-            try{
-                r = Files.newBufferedReader(Paths.get(path));
-            }catch(Exception e){
-                e.printStackTrace();
+                String line;
 
-                if(r != null)
-                    r.close();
+                while((line = r.readLine()) != null){
+                    line = line.trim();
 
-                System.exit(1);
+                    if(line.isEmpty() || line.startsWith("#"))
+                        continue;
+
+                    int startIdx = line.indexOf('{');
+
+                    if(startIdx == -1)
+                        startIdx = line.length();
+
+                    Integer idx = startIdx == 0 ? null : Integer.parseInt(line.substring(0, startIdx).trim());
+                    line = line.substring(startIdx);
+
+                    currPatternList.add(ParsingUtils.parsePatterns(ParsingUtils.removeWhitespace(new StrView(line))));
+                    currIdxList.add(idx);
+                }
+
+                patternList.add(currPatternList);
+                idxList.add(currIdxList);
+
+                r.close();
             }
 
-            String line;
-
-            while((line = r.readLine()) != null){
-                line = line.trim();
-
-                if(line.isEmpty() || line.startsWith("#"))
-                    continue;
-
-                int startIdx = line.indexOf('{');
-
-                if(startIdx == -1)
-                    startIdx = line.length();
-
-                Integer idx = startIdx == 0 ? null : Integer.parseInt(line.substring(0, startIdx).trim());
-                line = line.substring(startIdx);
-
-                currPatternList.add(ParsingUtils.parsePatterns(ParsingUtils.removeWhitespace(new StrView(line))));
-                currIdxList.add(idx);
-            }
-
-            patternList.add(currPatternList);
-            idxList.add(currIdxList);
-
-            r.close();
+            patterns = new WholePattern(patternList, idxList);
+        }catch(Exception e){
+            e.printStackTrace();
         }
-
-        patterns = new WholePattern(patternList, idxList);
     }
 
     public void match(List<String> inputPaths, boolean gzipInput, List<String> matchedOutputPaths, List<String> unmatchedOutputPaths, boolean gzipOutput, Character delimiter){
-        List<BufferedReader> inputReaders = new ArrayList<>();
-        List<StrParameter> matchedOutputParams = new ArrayList<>();
-        List<BufferedWriter> unmatchedWriters = new ArrayList<>();
-        Map<StrView, BufferedWriter> cachedWriters = new HashMap<>();
-
         try{
+            List<BufferedReader> inputReaders = new ArrayList<>();
+            List<StrParameter> matchedOutputParams = new ArrayList<>();
+            List<BufferedWriter> unmatchedWriters = new ArrayList<>();
+            Map<StrView, BufferedWriter> cachedWriters = new HashMap<>();
+
             for(int i = 0; i < inputPaths.size(); i++){
                 BufferedReader inputReader = ParsingUtils.getReader(inputPaths.get(i), gzipInput);
                 StrParameter matchedOutputParam = new StrParameter(ParsingUtils.splitByVars(new StrView(matchedOutputPaths.get(i))));
@@ -149,9 +142,7 @@ public class PatternMatcher{
                     }
                 }
             }
-        }catch(Exception e){
-            e.printStackTrace();
-        }finally{
+
             for(BufferedReader r : inputReaders){
                 if(r != null)
                     r.close();
@@ -166,6 +157,8 @@ public class PatternMatcher{
                 if(w != null)
                     w.close();
             }
+        }catch(Exception e){
+            e.printStackTrace();
         }
     }
 
@@ -183,17 +176,18 @@ public class PatternMatcher{
         }
 
         StringBuilder res = new StringBuilder();
+        int count = 0;
 
         for(int i = 0; i < text.length(); i++){
             Boolean b = intervals.get(i);
 
-            if(b == true)
+            if(b != null && b == true)
                 count++;
 
             if(count == 0)
                 res.append(text.charAt(i));
 
-            if(b == false)
+            if(b != null && b == false)
                 count--;
         }
 

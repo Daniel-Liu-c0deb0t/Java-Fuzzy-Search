@@ -67,7 +67,7 @@ public class FuzzyPattern implements FixedPattern{
         else
             minOverlapParam = new FloatParameter(-0.0f);
 
-        s = new StrView("patterns");
+        s = new StrView("pattern");
 
         if(params.containsKey(s)){
             patternsParam = new ArrayList<StrParameter>();

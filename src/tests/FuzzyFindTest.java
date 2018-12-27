@@ -20,12 +20,12 @@ public class FuzzyFindTest{
         m.put(new StrView("edits"), new StrView("1"));
         m.put(new StrView("required"), new StrView(""));
         m.put(new StrView("name"), new StrView("\"f1\""));
-        m.put(new StrView("patterns"), new StrView("f\"test_patterns.txt\""));
+        m.put(new StrView("pattern"), new StrView("f\"test_patterns.txt\""));
         FuzzyPattern p = new FuzzyPattern(m);
 
         Map<StrView, StrView> m3 = new HashMap<>();
         m3.put(new StrView("edits"), new StrView("0"));
-        m3.put(new StrView("patterns"), new StrView("f\"test_patterns.txt\"[%f1.pattern_name%]"));
+        m3.put(new StrView("pattern"), new StrView("f\"test_patterns.txt\"[%f1.pattern_name%]"));
         FuzzyPattern p4 = new FuzzyPattern(m3);
 
         Map<StrView, StrView> m1 = new HashMap<>();

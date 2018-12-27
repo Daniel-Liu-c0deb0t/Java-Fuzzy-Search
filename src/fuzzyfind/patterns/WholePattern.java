@@ -20,11 +20,14 @@ public class WholePattern{
         this.patternList = patternList;
         this.indexToPattern = new ArrayList<List<Integer>>();
 
+        int idx = 0;
+
         for(int i = 0; i < indexList.size(); i++){
             List<Integer> list = indexList.get(i);
 
             for(int j = 0; j < list.size(); j++){
-                indexToPattern.add(Arrays.asList(list.get(j), i, j));
+                int curr = list.get(j) == null ? idx++ : list.get(j);
+                indexToPattern.add(Arrays.asList(curr, i, j));
             }
         }
 

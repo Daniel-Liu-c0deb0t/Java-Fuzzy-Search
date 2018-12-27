@@ -68,7 +68,6 @@ public class ParsingUtils{
                 data = new String(Files.readAllBytes(Paths.get(path)));
             }catch(Exception e){
                 e.printStackTrace();
-                System.exit(1);
             }
 
             return new StrView(data);
@@ -369,7 +368,11 @@ public class ParsingUtils{
         for(String path : paths){
             Path p = Paths.get(path);
             String fileName = p.getFileName().toString();
-            String dir = p.getParent().toString();
+            Path parent = p.getParent();
+            String dir = "";
+
+            if(parent != null)
+                dir = parent.toString();
 
             res.add(dir + s + fileName);
         }
@@ -405,10 +408,12 @@ public class ParsingUtils{
     public static BufferedWriter getWriter(String path, boolean gzip) throws Exception{
         gzip = gzip || isGzip(path);
 
-        Path parent = Paths.get(path).getParent();
+        if(!path.equals("sysout") && !path.equals("syserr")){
+            Path parent = Paths.get(path).getParent();
 
-        if(parent != null)
-            Files.createDirectories(parent);
+            if(parent != null)
+                Files.createDirectories(parent);
+        }
 
         if(gzip){
             if(path.equals("sysout")){
