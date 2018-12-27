@@ -8,13 +8,22 @@ import fuzzyfind.references.Reference;
 import fuzzyfind.references.StrReference;
 import fuzzyfind.references.VarReference;
 
+import fuzzyfind.patterns.Pattern;
+import fuzzyfind.patterns.FuzzyPattern;
+import fuzzyfind.patterns.RepeatingIntervalPattern;
+import fuzzyfind.patterns.RepeatingFixedPattern;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
 
 import java.nio.file.Paths;
 import java.nio.file.Files;
+
+import java.io.BufferedReader;
 
 public class ParsingUtils{
     public static LengthParam toLengthParam(float n){
@@ -48,7 +57,7 @@ public class ParsingUtils{
                 data = new String(Files.readAllBytes(Paths.get(path)));
             }catch(Exception e){
                 e.printStackTrace();
-                System.exit(0);
+                System.exit(1);
             }
 
             return new StrView(data);
@@ -170,7 +179,7 @@ public class ParsingUtils{
         return res;
     }
 
-    public static List<StrView> splitOutsideStr(StrView s, char... d){
+    public static List<StrView> splitOutsideStr(StrView s, boolean removeEmpty, char... d){
         Set<Character> set = new HashSet<>();
 
         for(char c : d)
@@ -195,7 +204,8 @@ public class ParsingUtils{
                 }else if(!inStr && ((!inBrackets && c == '[') || (inBrackets && c == ']'))){
                     inBrackets = !inBrackets;
                 }else if(!inStr && !inBrackets && set.contains(c)){
-                    res.add(s.substring(prev, i));
+                    if(!removeEmpty || prev < i)
+                        res.add(s.substring(prev, i));
                     prev = i + 1;
                 }
             }
@@ -208,22 +218,44 @@ public class ParsingUtils{
     }
 
     public static List<List<StrView>> splitKeyValuePairs(StrView s){
-        List<StrView> lines = splitOutsideStr(s, ';', '\n');
+        List<StrView> lines = splitOutsideStr(s, true, ';', '\n');
         List<List<StrView>> res = new ArrayList<>();
 
         for(StrView line : lines){
-            res.add(splitOutsideStr(line, ':'));
+            res.add(splitOutsideStr(line, false, ':'));
         }
 
         return res;
     }
 
     public static StrView removeWhitespace(StrView s){
-        return Utils.concatenate(splitOutsideStr(s, ' ', '\t'));
+        return Utils.concatenate(splitOutsideStr(s, true, ' ', '\t'));
     }
 
-    public static int nextIdx(StrView s, int idx, char c){
+    public static int nextIdx(StrView s, int idx, char nextChar){
+        boolean inStr = false;
+        boolean inBrackets = false;
+        boolean escaped = false;
 
+        for(int i = idx; i < s.length(); i++){
+            char c = s.charAt(i);
+
+            if(escaped){
+                escaped = false;
+            }else{
+                if(c == '\\'){
+                    escaped = true;
+                }else if(c == '"'){
+                    inStr = !inStr;
+                }else if(!inStr && ((!inBrackets && c == '[') || (inBrackets && c == ']'))){
+                    inBrackets = !inBrackets;
+                }else if(!inStr && !inBrackets && c == nextChar){
+                    return i;
+                }
+            }
+        }
+
+        return -1;
     }
 
     public static List<Pattern> parsePatterns(StrView s){
@@ -232,10 +264,14 @@ public class ParsingUtils{
 
         while(startIdx < s.length()){
             int endIdx = nextIdx(s, startIdx, '}');
+
+            if(endIdx == -1)
+                throw new IllegalArgumentException("Ending '}' not found!");
+
             char type = s.charAt(startIdx);
             Map<StrView, StrView> paramMap = new HashMap<>();
 
-            List<StrView> params = splitOutsideStr(s.substring(startIdx + 1, endIdx), ',');
+            List<StrView> params = splitOutsideStr(s.substring(startIdx + 1, endIdx), false, ',');
 
             for(StrView param : params){
                 int idx = param.indexOf('=');
@@ -260,5 +296,34 @@ public class ParsingUtils{
         }
 
         return res;
+    }
+
+    public static List<StrView> read(BufferedReader r, Character d, int n) throws Exception{
+        List<StrView> lines = new ArrayList<>();
+
+        StringBuilder b = new StringBuilder();
+        int i;
+
+        while((i = r.read()) != -1){
+            char c = (char)i;
+
+            if(d != null && c == d){
+                lines.add(new StrView(b));
+                b.setLength(0);
+
+                if(lines.size() >= n)
+                    return lines;
+            }else{
+                b.append(c);
+            }
+        }
+
+        if(b.length() > 0)
+            lines.add(new StrView(b));
+
+        if(lines.size() < n)
+            return null;
+        else
+            return lines;
     }
 }

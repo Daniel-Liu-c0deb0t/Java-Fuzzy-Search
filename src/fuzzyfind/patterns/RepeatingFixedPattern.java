@@ -18,7 +18,7 @@ public class RepeatingFixedPattern implements FixedPattern{
     private Set<Character> acceptableChars;
     private IntParameter lengthParam;
     private int length;
-    private boolean required;
+    private boolean required, trim;
     private StrView name;
 
     public RepeatingFixedPattern(Map<StrView, StrView> params){
@@ -28,6 +28,11 @@ public class RepeatingFixedPattern implements FixedPattern{
 
         if(params.containsKey(s))
             required = true;
+
+        s = new StrView("trim");
+
+        if(params.containsKey(s))
+            trim = true;
 
         s = new StrView("name");
 
@@ -107,6 +112,11 @@ public class RepeatingFixedPattern implements FixedPattern{
     @Override
     public boolean isRequired(){
         return required;
+    }
+
+    @Override
+    public boolean shouldTrim(){
+        return trim;
     }
 
     @Override

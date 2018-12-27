@@ -28,7 +28,7 @@ public class FuzzyPattern implements FixedPattern{
     private List<StrParameter> patternsParam;
     private List<StrView> patterns;
     private List<Set<Integer>> patternEscapeIdx;
-    private boolean required;
+    private boolean required, trim;
     private StrView name;
     private StrParameter selector;
     private Map<StrView, List<Integer>> patternNames;
@@ -42,6 +42,11 @@ public class FuzzyPattern implements FixedPattern{
 
         if(params.containsKey(s))
             required = true;
+
+        s = new StrView("trim");
+
+        if(params.containsKey(s))
+            trim = true;
 
         s = new StrView("name");
 
@@ -73,7 +78,7 @@ public class FuzzyPattern implements FixedPattern{
             patternNameList = new ArrayList<StrView>();
 
             StrView[] str = ParsingUtils.resolveStrWithSelector(params.get(s));
-            List<List<StrView>> pairs = ParsingUtils.splitKeyValuePairs(str[0]);
+            List<List<StrView>> pairs = ParsingUtils.splitKeyValuePairs(ParsingUtils.removeWhitespace(str[0]));
 
             if(str[1] != null)
                 selector = new StrParameter(ParsingUtils.splitByVars(str[1]));
@@ -210,6 +215,11 @@ public class FuzzyPattern implements FixedPattern{
     @Override
     public boolean isRequired(){
         return required;
+    }
+
+    @Override
+    public boolean shouldTrim(){
+        return trim;
     }
 
     @Override

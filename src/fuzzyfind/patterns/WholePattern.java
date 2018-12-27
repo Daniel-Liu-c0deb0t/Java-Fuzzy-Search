@@ -50,6 +50,9 @@ public class WholePattern{
             List<Pattern> currPatterns = patternList.get(indexes.get(1)).get(indexes.get(2));
             List<PatternMatch> matches = search(currText, currPatterns);
 
+            if(matches == null)
+                return null;
+
             res.get(indexes.get(1)).set(indexes.get(2), matches);
         }
 
@@ -342,6 +345,6 @@ public class WholePattern{
     }
 
     public int getLength(int i){
-        return patterns.get(i).size();
+        return patternList.get(i).size();
     }
 }

@@ -17,6 +17,7 @@ public class RepeatingIntervalPattern implements Pattern{
     private Set<Character> acceptableChars;
     private IntParameter minLengthParam, maxLengthParam;
     private int minLength, maxLength;
+    private boolean trim;
     private StrView name;
 
     public RepeatingIntervalPattern(Map<StrView, StrView> params){
@@ -26,6 +27,11 @@ public class RepeatingIntervalPattern implements Pattern{
 
         if(params.containsKey(s))
             name = ParsingUtils.removeOuterQuotes(params.get(s));
+
+        s = new StrView("trim");
+
+        if(params.containsKey(s))
+            trim = true;
 
         s = new StrView("length");
 
@@ -66,6 +72,11 @@ public class RepeatingIntervalPattern implements Pattern{
     @Override
     public boolean isRequired(){
         return true;
+    }
+
+    @Override
+    public boolean shouldTrim(){
+        return trim;
     }
 
     @Override

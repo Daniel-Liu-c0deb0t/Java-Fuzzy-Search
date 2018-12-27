@@ -23,9 +23,10 @@ import java.io.BufferedWriter;
 
 public class PatternMatcher{
     private WholePattern patterns;
+    private List<List<List<Pattern>>> patternList;
 
     public PatternMatcher(List<String> paths){
-        List<List<List<Pattern>>> patternList = new ArrayList<>();
+        patternList = new ArrayList<>();
         List<List<Integer>> idxList = new ArrayList<>();
 
         for(String path : paths){
@@ -41,10 +42,10 @@ public class PatternMatcher{
                 if(r != null)
                     r.close();
 
-                System.exit(0);
+                System.exit(1);
             }
 
-            String line = null;
+            String line;
 
             while((line = r.readLine()) != null){
                 line = line.trim();
@@ -78,7 +79,20 @@ public class PatternMatcher{
         List<StrParameter> outputWriterPaths = new ArrayList<>();
 
         for(int i = 0; i < inputPaths.size(); i++){
-            BufferedReader inputReader = Files.newBufferedReader(Paths.get(inputPaths.get(i)));
+            try{
+                BufferedReader inputReader = Files.newBufferedReader(Paths.get(inputPaths.get(i)));
+            }catch(Exception e){
+                e.printStackTrace();
+
+                if(inputReader != null)
+                    inputReader.close();
+
+                for(BufferedReader r : inputReaders)
+                    r.close();
+
+                System.exit(1);
+            }
+
             StrParameter outputPathParam = new StrParameter(ParsingUtils.splitByVars(new StrView(outputPaths.get(i))));
 
             inputReaders.add(inputReader);
@@ -86,18 +100,38 @@ public class PatternMatcher{
         }
 
         Map<StrView, BufferedWriter> cachedWriters = new HashMap<>();
-        boolean done = false;
 
-        while(!done){
+        while_loop:
+        while(true){
             List<List<StrView>> texts = new ArrayList<>();
 
             for(int i = 0; i < inputReaders.size(); i++){
-                List<StrView> currTexts = new ArrayList<>();
-                done |= ParsingUtils.read(inputReaders.get(i), delimiter, patterns.getLength(i), currTexts);
+                List<StrView> currTexts = null;
+
+                try{
+                    currTexts = ParsingUtils.read(inputReaders.get(i), delimiter, patterns.getLength(i));
+                }catch(Exception e){
+                    e.printStackTrace();
+
+                    for(BufferedReader r : inputReaders)
+                        r.close();
+
+                    for(BufferedWriter w : cachedWriters.values())
+                        w.close();
+
+                    System.exit(1);
+                }
+
+                if(currTexts == null)
+                    break while_loop;
+
                 texts.add(currTexts);
             }
 
             List<List<List<PatternMatch>>> matches = patterns.search(texts);
+
+            if(matches == null)
+                continue;
 
             for(int i = 0; i < matches.size(); i++){
                 StrView path = outputWriterPaths.get(i).get();
@@ -114,10 +148,13 @@ public class PatternMatcher{
                         if(w != null)
                             w.close();
 
+                        for(BufferedReader r : inputReaders)
+                            r.close();
+
                         for(BufferedWriter writer : cachedWriters.values())
                             writer.close();
 
-                        System.exit(0);
+                        System.exit(1);
                     }
 
                     cachedWriters.put(path, w);
@@ -125,9 +162,10 @@ public class PatternMatcher{
 
                 List<StrView> currTexts = texts.get(i);
                 List<List<PatternMatch>> currMatches = matches.get(i);
+                List<List<Pattern>> currPatterns = patternList.get(i);
 
                 for(int j = 0; j < currTexts.size(); j++){
-                    StringBuilder b = trimText(currTexts.get(j), currMatches.get(j));
+                    StringBuilder b = trimText(currTexts.get(j), currMatches.get(j), currPatterns.get(j));
                     w.append(b);
 
                     if(j < currTexts.size() - 1)
@@ -136,7 +174,41 @@ public class PatternMatcher{
             }
         }
 
+        for(BufferedReader r : inputReaders)
+            r.close();
+
         for(BufferedWriter w : cachedWriters.values())
             w.close();
+    }
+
+    private StringBuilder trimText(StrView text, List<PatternMatch> matches, List<Pattern> currPatterns){
+        Map<Integer, Boolean> intervals = new HashMap<>();
+
+        for(int i = 0; i < matches.size(); i++){
+            PatternMatch m = matches.get(i);
+
+            if(m.getLength() <= 0 || !currPatterns.get(i).shouldTrim())
+                continue;
+
+            intervals.put(m.getIndex() - m.getLength() + 1, true);
+            intervals.put(m.getIndex(), false);
+        }
+
+        StringBuilder res = new StringBuilder();
+
+        for(int i = 0; i < text.length(); i++){
+            Boolean b = intervals.get(i);
+
+            if(b == true)
+                count++;
+
+            if(count == 0)
+                res.append(text.charAt(i));
+
+            if(b == false)
+                count--;
+        }
+
+        return res;
     }
 }
