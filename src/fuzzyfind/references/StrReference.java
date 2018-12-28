@@ -2,6 +2,8 @@ package fuzzyfind.references;
 
 import javafuzzysearch.utils.StrView;
 
+import fuzzyfind.utils.Variables;
+
 public class StrReference implements Reference{
     private StrView val;
 
@@ -10,7 +12,7 @@ public class StrReference implements Reference{
     }
 
     @Override
-    public StrView get(){
+    public StrView get(Variables vars){
         return val;
     }
 }

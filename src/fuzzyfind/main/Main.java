@@ -29,6 +29,8 @@ public class Main{
         Character delimiter = '\n';
         boolean gzipInput = false;
         boolean gzipOutput = false;
+        int threadCount = 1;
+        int batchSize = 1000;
 
         String s = "--pattern";
 
@@ -68,7 +70,17 @@ public class Main{
         if(argMap.containsKey(s))
             gzipOutput = true;
 
+        s = "--threads";
+
+        if(argMap.containsKey(s))
+            threadCount = Integer.parseInt(argMap.get(s).get(0));
+
+        s = "--batch-size";
+
+        if(argMap.containsKey(s))
+            batchSize = Integer.parseInt(argMap.get(s).get(0));
+
         PatternMatcher patternMatcher = new PatternMatcher(patternPaths);
-        patternMatcher.match(inputPaths, gzipInput, matchedOutputPaths, unmatchedOutputPaths, gzipOutput, delimiter);
+        patternMatcher.match(inputPaths, gzipInput, matchedOutputPaths, unmatchedOutputPaths, gzipOutput, delimiter, threadCount, batchSize);
     }
 }

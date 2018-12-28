@@ -13,11 +13,12 @@ import fuzzyfind.parameters.IntParameter;
 
 import fuzzyfind.utils.ParsingUtils;
 import fuzzyfind.utils.PatternMatch;
+import fuzzyfind.utils.Variables;
+import fuzzyfind.utils.Parameters;
 
 public class RepeatingFixedPattern implements FixedPattern{
     private Set<Character> acceptableChars;
     private IntParameter lengthParam;
-    private int length;
     private boolean required, trim;
     private StrView name;
 
@@ -56,12 +57,17 @@ public class RepeatingFixedPattern implements FixedPattern{
     }
 
     @Override
-    public void updateParams(){
-        length = lengthParam.get();
+    public Parameters updateParams(Variables vars){
+        Parameters params = new Parameters();
+        Integer length = lengthParam.get(vars);
+        params.add("length", length);
+        return params;
     }
 
     @Override
-    public List<PatternMatch> searchAll(StrView text, boolean reversed){
+    public List<PatternMatch> searchAll(StrView text, boolean reversed, Parameters params){
+        int length = params.getInt("length");
+
         if(length > text.length())
             return null;
 
@@ -94,7 +100,9 @@ public class RepeatingFixedPattern implements FixedPattern{
     }
 
     @Override
-    public PatternMatch matchBest(StrView text, boolean reversed){
+    public PatternMatch matchBest(StrView text, boolean reversed, Parameters params){
+        int length = params.getInt("length");
+
         if(length > text.length())
             return required ? null : new PatternMatch(text.length() - 1, 0, 0, 0);
 
@@ -125,14 +133,10 @@ public class RepeatingFixedPattern implements FixedPattern{
     }
 
     @Override
-    public Map<StrView, StrView> getVars(PatternMatch m){
+    public void getVars(Variables vars, Parameters params, PatternMatch m){
         if(name == null)
-            return null;
+            return;
 
-        Map<StrView, StrView> res = new HashMap<>();
-
-        res.put(Utils.concatenate(name, new StrView(".length")), new StrView(String.valueOf(m.getLength())));
-
-        return res;
+        vars.add(Utils.concatenate(name, new StrView(".length")), new StrView(String.valueOf(m.getLength())));
     }
 }

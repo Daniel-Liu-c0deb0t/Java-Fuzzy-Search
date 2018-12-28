@@ -7,7 +7,6 @@ import javafuzzysearch.utils.StrView;
 
 public class Variables{
     private Map<StrView, StrView> vars;
-    private static Variables global = null;
 
     public Variables(){
         vars = new HashMap<StrView, StrView>();
@@ -27,12 +26,5 @@ public class Variables{
 
     public void clear(){
         vars.clear();
-    }
-
-    public static Variables getGlobal(){
-        if(global == null)
-            global = new Variables();
-
-        return global;
     }
 }

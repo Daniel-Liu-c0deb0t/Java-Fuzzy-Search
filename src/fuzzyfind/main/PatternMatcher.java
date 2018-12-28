@@ -7,6 +7,7 @@ import fuzzyfind.parameters.StrParameter;
 
 import fuzzyfind.utils.ParsingUtils;
 import fuzzyfind.utils.PatternMatch;
+import fuzzyfind.utils.Variables;
 
 import javafuzzysearch.utils.StrView;
 
@@ -20,6 +21,11 @@ import java.nio.file.Paths;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class PatternMatcher{
     private WholePattern patterns;
@@ -67,12 +73,23 @@ public class PatternMatcher{
         }
     }
 
-    public void match(List<String> inputPaths, boolean gzipInput, List<String> matchedOutputPaths, List<String> unmatchedOutputPaths, boolean gzipOutput, Character delimiter){
+    private boolean gzipOutput;
+    private Character delimiter;
+    private List<StrParameter> matchedOutputParams;
+    private List<BufferedWriter> unmatchedWriters;
+    private Map<StrView, BufferedWriter> cachedWriters;
+    private Semaphore semaphore;
+    private Object writeLock;
+
+    public void match(List<String> inputPaths, boolean gzipInput, List<String> matchedOutputPaths, List<String> unmatchedOutputPaths, boolean gzipOutput, Character delimiter, int threadCount, int batchSize){
+        this.gzipOutput = gzipOutput;
+        this.delimiter = delimiter;
+
         try{
             List<BufferedReader> inputReaders = new ArrayList<>();
-            List<StrParameter> matchedOutputParams = new ArrayList<>();
-            List<BufferedWriter> unmatchedWriters = new ArrayList<>();
-            Map<StrView, BufferedWriter> cachedWriters = new HashMap<>();
+            matchedOutputParams = new ArrayList<StrParameter>();
+            unmatchedWriters = new ArrayList<BufferedWriter>();
+            cachedWriters = new HashMap<StrView, BufferedWriter>();
 
             for(int i = 0; i < inputPaths.size(); i++){
                 BufferedReader inputReader = ParsingUtils.getReader(inputPaths.get(i), gzipInput);
@@ -87,61 +104,40 @@ public class PatternMatcher{
                 }
             }
 
+            ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+            semaphore = new Semaphore(threadCount * 2);
+            writeLock = new Object();
+
             while_loop:
             while(true){
-                List<List<StrView>> texts = new ArrayList<>();
+                semaphore.acquire();
 
-                for(int i = 0; i < inputReaders.size(); i++){
-                    List<StrView> currTexts = ParsingUtils.read(inputReaders.get(i), delimiter, patterns.getLength(i));
+                List<List<List<StrView>>> batchTexts = new ArrayList<>();
 
-                    if(currTexts == null)
-                        break while_loop;
+                for(int i = 0; i < batchSize; i++){
+                    List<List<StrView>> texts = new ArrayList<>();
 
-                    texts.add(currTexts);
-                }
+                    for(int j = 0; j < inputReaders.size(); j++){
+                        List<StrView> currTexts = ParsingUtils.read(inputReaders.get(j), delimiter, patterns.getLength(j));
 
-                List<List<List<PatternMatch>>> matches = patterns.search(texts);
+                        if(currTexts == null){
+                            if(!batchTexts.isEmpty())
+                                executor.execute(new BatchTask(batchTexts));
 
-                if(matches == null){
-                    for(int i = 0; i < unmatchedWriters.size(); i++){
-                        BufferedWriter w = unmatchedWriters.get(i);
-                        List<StrView> currTexts = texts.get(i);
-
-                        for(StrView text : currTexts){
-                            w.write(text.toString());
-
-                            if(delimiter != null)
-                                w.write(delimiter);
+                            break while_loop;
                         }
+
+                        texts.add(currTexts);
                     }
 
-                    continue;
+                    batchTexts.add(texts);
                 }
 
-                for(int i = 0; i < matches.size(); i++){
-                    StrView path = matchedOutputParams.get(i).get();
-                    BufferedWriter w = null;
-
-                    if(cachedWriters.containsKey(path)){
-                        w = cachedWriters.get(path);
-                    }else{
-                        w = ParsingUtils.getWriter(path.toString(), gzipOutput);
-                        cachedWriters.put(path, w);
-                    }
-
-                    List<StrView> currTexts = texts.get(i);
-                    List<List<PatternMatch>> currMatches = matches.get(i);
-                    List<List<Pattern>> currPatterns = patternList.get(i);
-
-                    for(int j = 0; j < currTexts.size(); j++){
-                        StringBuilder b = trimText(currTexts.get(j), currMatches.get(j), currPatterns.get(j));
-                        w.append(b);
-
-                        if(delimiter != null)
-                            w.write(delimiter);
-                    }
-                }
+                executor.execute(new BatchTask(batchTexts));
             }
+
+            executor.shutdown();
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
 
             for(BufferedReader r : inputReaders){
                 if(r != null)
@@ -192,5 +188,69 @@ public class PatternMatcher{
         }
 
         return res;
+    }
+
+    private class BatchTask implements Runnable{
+        private List<List<List<StrView>>> batchTexts;
+
+        BatchTask(List<List<List<StrView>>> batchTexts){
+            this.batchTexts = batchTexts;
+        }
+
+        @Override
+        public void run(){
+            try{
+                for(List<List<StrView>> texts : batchTexts){
+                    Variables vars = new Variables();
+                    List<List<List<PatternMatch>>> matches = patterns.search(texts, vars);
+
+                    synchronized(writeLock){
+                        if(matches == null){
+                            for(int i = 0; i < unmatchedWriters.size(); i++){
+                                BufferedWriter w = unmatchedWriters.get(i);
+                                List<StrView> currTexts = texts.get(i);
+
+                                for(StrView text : currTexts){
+                                    w.write(text.toString());
+
+                                    if(delimiter != null)
+                                        w.write(delimiter);
+                                }
+                            }
+
+                            continue;
+                        }
+
+                        for(int i = 0; i < matches.size(); i++){
+                            StrView path = matchedOutputParams.get(i).get(vars);
+                            BufferedWriter w = null;
+
+                            if(cachedWriters.containsKey(path)){
+                                w = cachedWriters.get(path);
+                            }else{
+                                w = ParsingUtils.getWriter(path.toString(), gzipOutput);
+                                cachedWriters.put(path, w);
+                            }
+
+                            List<StrView> currTexts = texts.get(i);
+                            List<List<PatternMatch>> currMatches = matches.get(i);
+                            List<List<Pattern>> currPatterns = patternList.get(i);
+
+                            for(int j = 0; j < currTexts.size(); j++){
+                                StringBuilder b = trimText(currTexts.get(j), currMatches.get(j), currPatterns.get(j));
+                                w.append(b);
+
+                                if(delimiter != null)
+                                    w.write(delimiter);
+                            }
+                        }
+                    }
+                }
+            }catch(Exception e){
+                e.printStackTrace();
+            }finally{
+                semaphore.release();
+            }
+        }
     }
 }

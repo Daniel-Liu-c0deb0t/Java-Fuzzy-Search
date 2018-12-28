@@ -12,7 +12,7 @@ public class VarReference implements Reference{
     }
 
     @Override
-    public StrView get(){
-        return Variables.getGlobal().get(name);
+    public StrView get(Variables vars){
+        return vars.get(name);
     }
 }

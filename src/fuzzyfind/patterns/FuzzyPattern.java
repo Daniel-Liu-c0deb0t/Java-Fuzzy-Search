@@ -12,6 +12,8 @@ import fuzzyfind.parameters.StrParameter;
 
 import fuzzyfind.utils.ParsingUtils;
 import fuzzyfind.utils.PatternMatch;
+import fuzzyfind.utils.Parameters;
+import fuzzyfind.utils.Variables;
 
 import java.util.List;
 import java.util.Set;
@@ -24,16 +26,13 @@ import java.util.ArrayList;
 public class FuzzyPattern implements FixedPattern{
     private FloatParameter scoreThresholdParam;
     private FloatParameter minOverlapParam;
-    private CutoffSearcher searcher;
     private List<StrParameter> patternsParam;
-    private List<StrView> patterns;
     private List<Set<Integer>> patternEscapeIdx;
     private boolean required, trim;
     private StrView name;
     private StrParameter selector;
     private Map<StrView, List<Integer>> patternNames;
     private List<StrView> patternNameList;
-    private List<Integer> patternToIdx;
 
     public FuzzyPattern(Map<StrView, StrView> params){
         int requiredParams = 1;
@@ -72,8 +71,6 @@ public class FuzzyPattern implements FixedPattern{
         if(params.containsKey(s)){
             patternsParam = new ArrayList<StrParameter>();
             patternEscapeIdx = new ArrayList<Set<Integer>>();
-            patterns = new ArrayList<StrView>();
-            patternToIdx = new ArrayList<Integer>();
             patternNames = new HashMap<StrView, List<Integer>>();
             patternNameList = new ArrayList<StrView>();
 
@@ -108,46 +105,57 @@ public class FuzzyPattern implements FixedPattern{
 
         if(requiredParams != 0)
             throw new IllegalArgumentException("Fuzzy pattern requires " + requiredParams + " more arguments!");
-
-        searcher = new CutoffSearcher();
     }
 
     @Override
-    public void updateParams(){
-        searcher.scoreThreshold(ParsingUtils.toLengthParam(scoreThresholdParam.get()));
-        searcher.minOverlap(ParsingUtils.toLengthParam(minOverlapParam.get()), Location.END);
+    public Parameters updateParams(Variables vars){
+        Parameters res = new Parameters();
 
-        patterns.clear();
-        patternToIdx.clear();
+        CutoffSearcher searcher = new CutoffSearcher();
+        searcher.scoreThreshold(ParsingUtils.toLengthParam(scoreThresholdParam.get(vars)));
+        searcher.minOverlap(ParsingUtils.toLengthParam(minOverlapParam.get(vars)), Location.END);
+        res.add("searcher", searcher);
+
+        List<StrView> patterns = new ArrayList<>();
+        List<Integer> patternToIdx = new ArrayList<>();
 
         if(selector == null){
             for(int i = 0; i < patternsParam.size(); i++){
-                patterns.add(patternsParam.get(i).get());
+                patterns.add(patternsParam.get(i).get(vars));
                 patternToIdx.add(i);
             }
         }else{
-            StrView selected = selector.get();
+            StrView selected = selector.get(vars);
 
             if(patternNames.containsKey(selected)){
                 List<Integer> idx = patternNames.get(selected);
 
                 for(int i : idx){
-                    patterns.add(patternsParam.get(i).get());
+                    patterns.add(patternsParam.get(i).get(vars));
                     patternToIdx.add(i);
                 }
             }else{
                 int idx = Integer.parseInt(selected.toString());
 
                 if(idx >= 0){
-                    patterns.add(patternsParam.get(idx).get());
+                    patterns.add(patternsParam.get(idx).get(vars));
                     patternToIdx.add(idx);
                 }
             }
         }
+
+        res.add("patterns", patterns);
+        res.add("patternToIdx", patternToIdx);
+
+        return res;
     }
 
     @Override
-    public List<PatternMatch> searchAll(StrView text, boolean reversed){
+    public List<PatternMatch> searchAll(StrView text, boolean reversed, Parameters params){
+        CutoffSearcher searcher = params.getSearcher("searcher");
+        List<StrView> patterns = params.getStrList("patterns");
+        List<Integer> patternToIdx = params.getIntList("patternToIdx");
+
         if(reversed)
             text = text.reverse();
 
@@ -180,7 +188,11 @@ public class FuzzyPattern implements FixedPattern{
     }
 
     @Override
-    public PatternMatch matchBest(StrView text, boolean reversed){
+    public PatternMatch matchBest(StrView text, boolean reversed, Parameters params){
+        CutoffSearcher searcher = params.getSearcher("searcher");
+        List<StrView> patterns = params.getStrList("patterns");
+        List<Integer> patternToIdx = params.getIntList("patternToIdx");
+
         if(reversed)
             text = text.reverse();
 
@@ -228,21 +240,17 @@ public class FuzzyPattern implements FixedPattern{
     }
 
     @Override
-    public Map<StrView, StrView> getVars(PatternMatch m){
+    public void getVars(Variables vars, Parameters params, PatternMatch m){
         if(name == null)
-            return null;
+            return;
 
-        Map<StrView, StrView> res = new HashMap<>();
-
-        res.put(Utils.concatenate(name, new StrView(".length")), new StrView(String.valueOf(m.getLength())));
+        vars.add(Utils.concatenate(name, new StrView(".length")), new StrView(String.valueOf(m.getLength())));
 
         int patternIdx = m.getPatternIdx();
-        res.put(Utils.concatenate(name, new StrView(".pattern_idx")), new StrView(String.valueOf(patternIdx)));
-        res.put(Utils.concatenate(name, new StrView(".pattern_name")),
+        vars.add(Utils.concatenate(name, new StrView(".pattern_idx")), new StrView(String.valueOf(patternIdx)));
+        vars.add(Utils.concatenate(name, new StrView(".pattern_name")),
                 patternIdx == -1 ? new StrView("") : patternNameList.get(m.getPatternIdx()));
-        res.put(Utils.concatenate(name, new StrView(".pattern")),
-                patternIdx == -1 ? new StrView("") : patterns.get(m.getPatternIdx()));
-
-        return res;
+        vars.add(Utils.concatenate(name, new StrView(".pattern")),
+                patternIdx == -1 ? new StrView("") : params.getStrList("patterns").get(m.getPatternIdx()));
     }
 }

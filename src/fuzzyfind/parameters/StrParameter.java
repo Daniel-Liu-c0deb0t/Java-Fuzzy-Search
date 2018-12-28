@@ -9,13 +9,15 @@ import javafuzzysearch.utils.Utils;
 import fuzzyfind.references.Reference;
 import fuzzyfind.references.StrReference;
 
+import fuzzyfind.utils.Variables;
+
 public class StrParameter{
     private List<Reference> references;
     private StrView str;
 
     public StrParameter(List<Reference> references){
         if(references.size() == 1 && references.get(0) instanceof StrReference)
-            this.str = references.get(0).get();
+            this.str = references.get(0).get(null);
         else
             this.references = references;
     }
@@ -24,12 +26,12 @@ public class StrParameter{
         this.str = str;
     }
 
-    public StrView get(){
+    public StrView get(Variables vars){
         if(str == null){
             List<StrView> list = new ArrayList<>();
 
             for(Reference r : references)
-                list.add(r.get());
+                list.add(r.get(vars));
 
             return Utils.concatenate(list);
         }else{
