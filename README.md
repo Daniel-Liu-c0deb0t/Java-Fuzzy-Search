@@ -33,3 +33,9 @@ Implementation of [Myer's algorithm](https://pdfs.semanticscholar.org/ec02/dc322
 
 
 ### Stateful DP and Ukkonen's cutoff heuristic
+
+### N-grams
+Splits each pattern into contiguous, overlapping segments of length `N`, and when matching a piece of text, do the same for the text. This allows fast checks for overlaps of length `N` between the pattern and the text. It can be used as a preliminary check before using a more costly searching algorithm. A practical value for `N` is either `N = 3` or `N = 2`.
+
+### StrView
+`StrView` is the class used to represent strings in the library. It acts as an immutable view on a character array, allowing substring, reverse, and upper/lower case operations to be constant time.
