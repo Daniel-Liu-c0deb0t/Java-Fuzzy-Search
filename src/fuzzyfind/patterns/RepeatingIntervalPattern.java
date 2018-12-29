@@ -22,8 +22,6 @@ public class RepeatingIntervalPattern implements Pattern{
     private StrView name;
 
     public RepeatingIntervalPattern(Map<StrView, StrView> params){
-        int requiredParams = 1;
-
         StrView s = new StrView("name");
 
         if(params.containsKey(s))
@@ -40,16 +38,15 @@ public class RepeatingIntervalPattern implements Pattern{
             int idx = params.get(s).indexOf('-');
             minLengthParam = new IntParameter(ParsingUtils.splitByVars(params.get(s).substring(0, idx)));
             maxLengthParam = new IntParameter(ParsingUtils.splitByVars(params.get(s).substring(idx + 1)));
-            requiredParams--;
+        }else{
+            minLengthParam = new IntParameter(0);
+            maxLengthParam = new IntParameter(Integer.MAX_VALUE);
         }
 
         s = new StrView("pattern");
 
         if(params.containsKey(s))
             acceptableChars = ParsingUtils.parseCharRanges(ParsingUtils.resolveStr(params.get(s)));
-
-        if(requiredParams != 0)
-            throw new IllegalArgumentException("Repeating interval pattern requires " + requiredParams + " more arguments!");
     }
 
     @Override

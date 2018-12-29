@@ -9,7 +9,3 @@ A fast and flexible Java fuzzy search library that supports bit parallel algorit
 - Stateful DP across multiple patterns + Ukkonen's cutoff heuristic (works well with patterns that share prefixes)
 - Support for wildcard characters with all fuzzy string matching algorithms
 - Support for partial overlaps between the text and the search pattern with fuzzy search algorithms (allows the pattern to hang off the ends of the text)
-
-## Future work
-- Generalize searching to work on any list of objects, instead of just strings
-    - An example use case would be fuzzy searching with whole words instead of just characters
