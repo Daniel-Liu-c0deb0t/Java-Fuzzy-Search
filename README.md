@@ -1,6 +1,8 @@
 # Java-Fuzzy-Search
 A fast and flexible Java fuzzy search library that supports bit parallel algorithms, wildcard characters, different scoring schemes, and other features. The goal is to focus on doing one thing (string search) and have tons of options and optimizations for different use cases.
 
+Also includes a fuzzy search tool that uses a simple language for describing patterns, which is similar to the `grep` Unix command. Since the tool is very general, it can be applied to bioinformatic tasks like demultiplexing DNA sequences and trimming adapters.
+
 ## Overview of features
 - Very basic exact string search using the KMP algorithm (use Bitap for wildcard characters and other features)
 - Fuzzy string search using the Bitap algorithm (Hamming disance)
@@ -9,3 +11,14 @@ A fast and flexible Java fuzzy search library that supports bit parallel algorit
 - Stateful DP across multiple patterns + Ukkonen's cutoff heuristic (works well with patterns that share prefixes)
 - Support for wildcard characters with all fuzzy string matching algorithms
 - Support for partial overlaps between the text and the search pattern with fuzzy search algorithms (allows the pattern to hang off the ends of the text)
+
+### Knuth-Morris-Pratt exact string search
+A very standard implementation of the [KMP algorithm](https://en.wikipedia.org/wiki/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm). The runtime complexity is `O(n + m)` for a text of size `n` and a pattern of size `m`.
+
+### Bitap fuzzy string search with Hamming distance metric
+Implementation of the [Bitap algorithm](https://www.cs.helsinki.fi/u/tpkarkka/opetus/11s/spa/lecture04.pdf). The runtime complexity is `O(n * (m / w))` for a text of size `n`, a pattern of size `m`, and a word size of `w`. It takes advantage of bit operations on short bit sets having essentially constant time. We use a Java `long` that is 63 bits (not using sign bit) as one word, and we partition the pattern into many chunks (words) for faster searching.
+
+#### Other features
+- Partial overlap between the text and the pattern
+- Allows some wildcard characters to match a set of other characters
+
