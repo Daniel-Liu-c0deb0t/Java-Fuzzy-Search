@@ -36,10 +36,12 @@ public class Parameters{
         return (CutoffSearcher)params.get(key);
     }
 
+    @SuppressWarnings("unchecked")
     public List<Integer> getIntList(String key){
         return (List<Integer>)params.get(key);
     }
 
+    @SuppressWarnings("unchecked")
     public List<StrView> getStrList(String key){
         return (List<StrView>)params.get(key);
     }
