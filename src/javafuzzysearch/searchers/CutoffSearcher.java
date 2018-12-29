@@ -17,7 +17,7 @@ import javafuzzysearch.utils.Location;
 import javafuzzysearch.utils.StrView;
 
 /**
- * Implementation of vanilla DP with Ukkonen's cutoff algorithm for computing Levenshtein distance.
+ * Implementation of vanilla DP with Ukkonen's cutoff algorithm for searching using the Levenshtein distance metric.
  */
 public class CutoffSearcher{
     private LengthParam scoreThreshold = new LengthParam(0, false, false);
@@ -29,43 +29,76 @@ public class CutoffSearcher{
     private Location nonOverlapLocation = Location.ANY;
     private boolean useCutoff = true;
 
+    /**
+     * Sets the score threshold when searching.
+     * By default, the score is the number of edits, and the default threshold is zero edits.
+     */
     public CutoffSearcher scoreThreshold(LengthParam scoreThreshold){
         this.scoreThreshold = scoreThreshold;
         return this;
     }
 
+    /**
+     * Sets the minimum overlap between the pattern and the text, and the location where they can not fully overlap.
+     * By default, the pattern must fully overlap the text.
+     */
     public CutoffSearcher minOverlap(LengthParam minOverlap, Location nonOverlapLocation){
         this.minOverlap = minOverlap;
         this.nonOverlapLocation = nonOverlapLocation;
         return this;
     }
 
+    /**
+     * Allow transpositions in addition to insertions, deletions, and substitutions.
+     */
     public CutoffSearcher allowTranspositions(){
         this.allowTranspositions = true;
         return this;
     }
 
+    /**
+     * Sets the weights for each type of edit (no edit, substitution, insertion, deletion, and transposition).
+     * A scoring scheme that uses +1 for matches and -1 for all edits (or something similar) can be used
+     * but it will disable Ukkonen's cutoff heuristic and the score will have to be maximized instead of minimized.
+     * By default matches are 0 and all edits are +1.
+     */
     public CutoffSearcher editWeights(EditWeights editWeights){
         this.editWeights = editWeights;
         useCutoff = editWeights.isDiagonalMonotonic();
         return this;
     }
 
+    /**
+     * Maximizes the score.
+     * The score threshold becomes a lower bound.
+     */
     public CutoffSearcher maximizeScore(){
         this.maximizeScore = true;
         return this;
     }
 
+    /**
+     * Sets the wildcard characters for the text and the pattern.
+     * Each character can match a Set of other characters or map to null to match all other characters.
+     * No wilcard characters by default.
+     */
     public CutoffSearcher wildcardChars(Map<Character, Set<Character>> textWildcard, Map<Character, Set<Character>> patternWildcard){
         this.patternWildcard = patternWildcard;
         this.textWildcard = textWildcard;
         return this;
     }
 
+    /**
+     * Searches for pattern in text.
+     * Can optionally record the edit path in the resulting FuzzyMatch objects.
+     */
     public List<FuzzyMatch> search(StrView text, StrView pattern, boolean returnPath){
         return search(text, pattern, returnPath, new HashSet<Integer>(), new HashSet<Integer>());
     }
 
+    /**
+     * Searches for pattern in text, but can also specify wildcard characters that are escaped in the text and the pattern.
+     */
     public List<FuzzyMatch> search(StrView text, StrView pattern, boolean returnPath, Set<Integer> textEscapeIdx, Set<Integer> patternEscapeIdx){
         if(pattern.isEmpty())
             return new ArrayList<FuzzyMatch>();

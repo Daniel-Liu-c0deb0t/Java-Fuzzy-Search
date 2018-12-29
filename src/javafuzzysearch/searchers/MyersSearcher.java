@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.HashSet;
 
 /**
- * Implementation of Myer's fuzzy searching algorithm for Levenshtein distance.
+ * Implementation of Myer's fuzzy searching algorithm for searching using the Levenshtein distance metric.
  */
 public class MyersSearcher{
     private LengthParam maxEdits = new LengthParam(0, false, false);
@@ -23,27 +23,43 @@ public class MyersSearcher{
     private Map<Character, Set<Character>> patternWildcard = new HashMap<>();
     private Map<Character, Set<Character>> textWildcard = new HashMap<>();
 
+    /**
+     * Sets the maximum number of edits allowed.
+     */
     public MyersSearcher maxEdits(LengthParam maxEdits){
         this.maxEdits = maxEdits;
         return this;
     }
 
+    /**
+     * Sets the minimum allowed overlap between the pattern and the text.
+     * Only at the end of the text.
+     */
     public MyersSearcher minOverlap(LengthParam minOverlap){
         this.minOverlap = minOverlap;
         return this;
     }
 
+    /**
+     * Allows transpositions.
+     */
     public MyersSearcher allowTranspositions(){
         this.allowTranspositions = true;
         return this;
     }
 
+    /**
+     * Allows each character to match to a set of other characters or map to null to match any other character in pattern or text.
+     */
     public MyersSearcher wildcardChars(Map<Character, Set<Character>> textWildcard, Map<Character, Set<Character>> patternWildcard){
         this.patternWildcard = patternWildcard;
         this.textWildcard = textWildcard;
         return this;
     }
 
+    /**
+     * Generates the bit masks for a pattern.
+     */
     public Map<Boolean, Map<Character, BitVector>> preprocessPattern(StrView pattern, Set<Character> alphabet, Set<Integer> patternEscapeIdx){
         Map<Boolean, Map<Character, BitVector>> res = new HashMap<>();
 
@@ -86,10 +102,17 @@ public class MyersSearcher{
         return res;
     }
 
+    /**
+     * Searches for a pattern in text.
+     */
     public List<FuzzyMatch> search(StrView text, StrView pattern){
         return search(text, pattern, preprocessPattern(pattern, Utils.uniqueChars(text, pattern), new HashSet<Integer>()), new HashSet<Integer>());
     }
 
+    /**
+     * Searches for a pattern in text, using a generated pattern mask.
+     * Also, wildcard characters in the text and the pattern can be escaped by specifying their indexes.
+     */
     public List<FuzzyMatch> search(StrView text, StrView pattern, Map<Boolean, Map<Character, BitVector>> patternMask, Set<Integer> textEscapeIdx){
         if(pattern.isEmpty())
             return new ArrayList<FuzzyMatch>();

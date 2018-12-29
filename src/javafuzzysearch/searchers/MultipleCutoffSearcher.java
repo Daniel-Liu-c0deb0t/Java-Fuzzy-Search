@@ -19,7 +19,7 @@ import javafuzzysearch.utils.Array2D;
 import javafuzzysearch.utils.StrView;
 
 /**
- * Implementation of stateful DP between multiple patterns and Ukkonen's cutoff algorithm for computing Levenshtein distance.
+ * Implementation of stateful DP between multiple patterns and Ukkonen's cutoff algorithm for searching using the Levenshtein distance metric.
  */
 public class MultipleCutoffSearcher{
     private LengthParam scoreThreshold = new LengthParam(0, false, false);
@@ -31,39 +31,65 @@ public class MultipleCutoffSearcher{
     private Location nonOverlapLocation = Location.ANY;
     private boolean useCutoff = true;
 
+    /**
+     * Sets the score threshold for searching.
+     * By default the score is defined as the number of edits.
+     */
     public MultipleCutoffSearcher scoreThreshold(LengthParam scoreThreshold){
         this.scoreThreshold = scoreThreshold;
         return this;
     }
 
+    /**
+     * Sets the maximum non-overlapping portion between the text and the pattern.
+     * Also sets where the pattern and the text can not overlap.
+     */
     public MultipleCutoffSearcher maxNonOverlap(int maxNonOverlap, Location nonOverlapLocation){
         this.maxNonOverlap = maxNonOverlap;
         this.nonOverlapLocation = nonOverlapLocation;
         return this;
     }
 
+    /**
+     * Allows transpositions.
+     */
     public MultipleCutoffSearcher allowTranspositions(){
         this.allowTranspositions = true;
         return this;
     }
 
+    /**
+     * Sets the weights for each type of edit.
+     * Some weight configurations may turn off the cutoff heuristic.
+     */
     public MultipleCutoffSearcher editWeights(EditWeights editWeights){
         this.editWeights = editWeights;
         useCutoff = editWeights.isDiagonalMonotonic();
         return this;
     }
 
+    /**
+     * Maximizes the score instead of minimizing it.
+     * The score threshold also becomes a lower bound.
+     */
     public MultipleCutoffSearcher maximizeScore(){
         this.maximizeScore = true;
         return this;
     }
 
+    /**
+     * Allows characters to match many other characters in the pattern or in the text.
+     * Mapping a character to null instead of a Set makes it match any character.
+     */
     public MultipleCutoffSearcher wildcardChars(Map<Character, Set<Character>> textWildcard, Map<Character, Set<Character>> patternWildcard){
         this.patternWildcard = patternWildcard;
         this.textWildcard = textWildcard;
         return this;
     }
 
+    /**
+     * Generate bit masks for a pattern.
+     */
     public List<PatternEscape> preprocessPatterns(List<StrView> patterns, List<Set<Integer>> patternEscapeIdx){
         List<PatternEscape> patternEscapePairs = new ArrayList<>();
 
@@ -80,6 +106,10 @@ public class MultipleCutoffSearcher{
         return patternEscapePairs;
     }
 
+    /**
+     * Searches for many patterns within a text.
+     * Optionally records the edit path.
+     */
     public List<List<FuzzyMatch>> search(StrView text, List<StrView> patterns, boolean returnPath){
         List<Set<Integer>> empty = new ArrayList<>();
 
@@ -93,6 +123,10 @@ public class MultipleCutoffSearcher{
     private Array2D<Integer> start;
     private Array2D<Edit> path;
 
+    /**
+     * Searches for many patterns in a text.
+     * Accepts patterns and their escaped characters in PatternEscape pairs.
+     */
     public List<List<FuzzyMatch>> search(StrView text, List<PatternEscape> patternEscapePairs, boolean returnPath, Set<Integer> textEscapeIdx){
         List<List<FuzzyMatch>> matches = new ArrayList<>(patternEscapePairs.size());
 

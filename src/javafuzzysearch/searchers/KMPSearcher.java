@@ -11,9 +11,7 @@ import java.util.List;
  */
 public class KMPSearcher{
     /**
-     * Returns a longest suffix-prefix array.
-     * @param pattern The pattern to be preprocessed.
-     * @return The preprocessed longest suffix-prefix array.
+     * Returns the longest suffix-prefix array for a pattern.
      */
     public int[] preprocessPattern(StrView pattern){
         int length = 0;
@@ -40,9 +38,7 @@ public class KMPSearcher{
 
     /**
      * Searches for a String pattern in the String text.
-     * @param text String to be searched.
-     * @param pattern String to be searched for.
-     * @return A List of ExactMatches that have the indexes of match end locations.
+     * Returns a list of ExactMatch objects that represents each match location.
      */
     public List<ExactMatch> search(StrView text, StrView pattern){
         return search(text, pattern, preprocessPattern(pattern));
@@ -50,10 +46,7 @@ public class KMPSearcher{
 
     /**
      * Searches for a String pattern in the String text.
-     * @param text String to be searched.
-     * @param pattern String to be searched for.
-     * @param lsp A preprocessed longest suffix-prefix array for the pattern.
-     * @return A List of ExactMatches that have the indexes of the match end locations.
+     * Takes a longest prefix-suffix array for the pattern.
      */
     public List<ExactMatch> search(StrView text, StrView pattern, int[] lsp){
         int i = 0, j = 0;

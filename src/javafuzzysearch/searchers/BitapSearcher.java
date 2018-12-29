@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.HashSet;
 
 /**
- * Implementation of the Bitap fuzzy searching algorithm for Hamming distance.
+ * Implementation of the Bitap fuzzy searching algorithm that uses the Hamming distance metric.
  */
 public class BitapSearcher{
     private LengthParam maxEdits = new LengthParam(0, false, false);
@@ -24,23 +24,40 @@ public class BitapSearcher{
     private Map<Character, Set<Character>> textWildcard = new HashMap<>();
     private Location nonOverlapLocation = Location.ANY;
 
+    /**
+     * Sets the maximum number of edits allowed for each match location.
+     * The default is zero edits.
+     */
     public BitapSearcher maxEdits(LengthParam maxEdits){
         this.maxEdits = maxEdits;
         return this;
     }
 
+    /**
+     * Sets the minimum length of the overlap between the pattern and the text.
+     * Also takes a Location that specifies whether the non-overlapping portion between the pattern and the text is at the start or the end of the text.
+     * By default, the pattern and the text must be fully overlapping.
+     */
     public BitapSearcher minOverlap(LengthParam minOverlap, Location nonOverlapLocation){
         this.minOverlap = minOverlap;
         this.nonOverlapLocation = nonOverlapLocation;
         return this;
     }
 
+    /**
+     * Sets wildcard characters for the text and the pattern.
+     * Each wildcard character can match a Set of other characters, or map to null to match any character.
+     * There are no wildcard characters by default.
+     */
     public BitapSearcher wildcardChars(Map<Character, Set<Character>> textWildcard, Map<Character, Set<Character>> patternWildcard){
         this.patternWildcard = patternWildcard;
         this.textWildcard = textWildcard;
         return this;
     }
 
+    /**
+     * Generate bit masks for a pattern.
+     */
     public Map<Boolean, Map<Character, BitVector>> preprocessPattern(StrView pattern, Set<Character> alphabet, Set<Integer> patternEscapeIdx){
         Map<Boolean, Map<Character, BitVector>> res = new HashMap<>();
 
@@ -83,10 +100,18 @@ public class BitapSearcher{
         return res;
     }
 
+    /**
+     * Searches for a pattern in text.
+     * Automatically generates the bit masks for the pattern.
+     */
     public List<FuzzyMatch> search(StrView text, StrView pattern){
         return search(text, pattern, preprocessPattern(pattern, Utils.uniqueChars(text, pattern), new HashSet<Integer>()), new HashSet<Integer>());
     }
 
+    /**
+     * Searches for a pattern in text, but an existing pattern mask can be provided.
+     * Also, wildcard characters in pattern and text can be escaped into normal characters by specifying their indexes.
+     */
     public List<FuzzyMatch> search(StrView text, StrView pattern, Map<Boolean, Map<Character, BitVector>> patternMask, Set<Integer> textEscapeIdx){
         if(pattern.isEmpty())
             return new ArrayList<FuzzyMatch>();
