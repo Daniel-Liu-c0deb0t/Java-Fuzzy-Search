@@ -3,7 +3,7 @@ package javafuzzysearch.utils;
 public class StrView implements Comparable<StrView>{
     private char[] arr;
     private int start, length;
-    private boolean reversed;
+    private boolean reversed, lowerCase, upperCase;
     private int hash;
 
     public StrView(String s){
@@ -11,6 +11,8 @@ public class StrView implements Comparable<StrView>{
         this.start = 0;
         this.length = arr.length;
         this.reversed = false;
+        this.lowerCase = false;
+        this.upperCase = false;
     }
 
     public StrView(StringBuilder b){
@@ -19,6 +21,8 @@ public class StrView implements Comparable<StrView>{
         this.start = 0;
         this.length = arr.length;
         this.reversed = false;
+        this.lowerCase = false;
+        this.upperCase = false;
     }
 
     public StrView(char[] arr){
@@ -26,22 +30,34 @@ public class StrView implements Comparable<StrView>{
         this.start = 0;
         this.length = arr.length;
         this.reversed = false;
+        this.lowerCase = false;
+        this.upperCase = false;
     }
 
-    public StrView(char[] arr, int start, int length, boolean reversed){
+    public StrView(char[] arr, int start, int length, boolean reversed, boolean lowerCase, boolean upperCase){
         this.arr = arr;
         this.start = start;
         this.length = length;
         this.reversed = reversed;
+        this.lowerCase = lowerCase;
+        this.upperCase = upperCase;
     }
 
     public char charAt(int i){
-        return arr[reversed ? (start + length - 1 - i) : (start + i)];
+        char c = arr[reversed ? (start + length - 1 - i) : (start + i)];
+
+        if(lowerCase)
+            c = Character.toLowerCase(c);
+
+        if(upperCase)
+            c = Character.toUpperCase(c);
+
+        return c;
     }
 
     public StrView substring(int i, int j){
         int s = reversed ? (start + length - j) : (start + i);
-        return new StrView(arr, s, j - i, reversed);
+        return new StrView(arr, s, j - i, reversed, lowerCase, upperCase);
     }
 
     public StrView substring(int i){
@@ -75,12 +91,20 @@ public class StrView implements Comparable<StrView>{
     }
 
     public StrView reverse(){
-        return new StrView(arr, start, length, !reversed);
+        return new StrView(arr, start, length, !reversed, lowerCase, upperCase);
+    }
+
+    public StrView toLowerCase(){
+        return new StrView(arr, start, length, reversed, true, false);
+    }
+
+    public StrView toUpperCase(){
+        return new StrView(arr, start, length, reversed, false, true);
     }
 
     @Override
     public String toString(){
-        if(reversed){
+        if(reversed || lowerCase || upperCase){
             char[] res = new char[length];
 
             for(int i = 0; i < length; i++)

@@ -6,6 +6,7 @@ import javafuzzysearch.searchers.CutoffSearcher;
 import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.LengthParam;
 import javafuzzysearch.utils.Utils;
+import javafuzzysearch.utils.EditWeights;
 
 import fuzzyfind.parameters.FloatParameter;
 import fuzzyfind.parameters.StrParameter;
@@ -28,11 +29,13 @@ public class FuzzyPattern implements FixedPattern{
     private FloatParameter minOverlapParam;
     private List<StrParameter> patternsParam;
     private List<Set<Integer>> patternEscapeIdx;
-    private boolean required, trim;
+    private boolean required, trim, transpositions, caseInsensitive;
+    private EditWeights editWeights;
     private StrView name;
     private StrParameter selector;
     private Map<StrView, List<Integer>> patternNames;
     private List<StrView> patternNameList;
+    private Map<Character, Set<Character>> textWildcardChars, patternWildcardChars;
 
     public FuzzyPattern(Map<StrView, StrView> params){
         int requiredParams = 1;
@@ -46,6 +49,23 @@ public class FuzzyPattern implements FixedPattern{
 
         if(params.containsKey(s))
             trim = true;
+
+        s = new StrView("transpose");
+
+        if(params.containsKey(s))
+            transpositions = true;
+
+        s = new StrView("no_case");
+
+        if(params.containsKey(s))
+            caseInsensitive = true;
+
+        s = new StrView("hamming");
+
+        if(params.containsKey(s))
+            editWeights = new EditWeights().setDefault(0, 1, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
+        else
+            editWeights = new EditWeights();
 
         s = new StrView("name");
 
@@ -65,6 +85,56 @@ public class FuzzyPattern implements FixedPattern{
             minOverlapParam = new FloatParameter(ParsingUtils.splitByVars(params.get(s)));
         else
             minOverlapParam = new FloatParameter(-0.0f);
+
+        textWildcardChars = new HashMap<Character, Set<Character>>();
+        patternWildcardChars = new HashMap<Character, Set<Character>>();
+
+        s = new StrView("wildcard");
+
+        if(params.containsKey(s)){
+            List<List<StrView>> pairs = ParsingUtils.splitKeyValuePairs(
+                    ParsingUtils.removeWhitespace(ParsingUtils.resolveStr(params.get(s))));
+
+            for(List<StrView> pair : pairs){
+                StrView key = ParsingUtils.removeOuterQuotes(pair.get(0));
+                Set<Character> val = pair.size() <= 1 ? null : ParsingUtils.parseCharRanges(ParsingUtils.removeOuterQuotes(pair.get(1)));
+
+                for(int i = 0; i < key.length(); i++){
+                    textWildcardChars.put(key.charAt(i), val);
+                    patternWildcardChars.put(key.charAt(i), val);
+                }
+            }
+        }
+
+        s = new StrView("pattern_wildcard");
+
+        if(params.containsKey(s)){
+            List<List<StrView>> pairs = ParsingUtils.splitKeyValuePairs(
+                    ParsingUtils.removeWhitespace(ParsingUtils.resolveStr(params.get(s))));
+
+            for(List<StrView> pair : pairs){
+                StrView key = ParsingUtils.removeOuterQuotes(pair.get(0));
+                Set<Character> val = pair.size() <= 1 ? null : ParsingUtils.parseCharRanges(ParsingUtils.removeOuterQuotes(pair.get(1)));
+
+                for(int i = 0; i < key.length(); i++)
+                    patternWildcardChars.put(key.charAt(i), val);
+            }
+        }
+
+        s = new StrView("text_wildcard");
+
+        if(params.containsKey(s)){
+            List<List<StrView>> pairs = ParsingUtils.splitKeyValuePairs(
+                    ParsingUtils.removeWhitespace(ParsingUtils.resolveStr(params.get(s))));
+
+            for(List<StrView> pair : pairs){
+                StrView key = ParsingUtils.removeOuterQuotes(pair.get(0));
+                Set<Character> val = pair.size() <= 1 ? null : ParsingUtils.parseCharRanges(ParsingUtils.removeOuterQuotes(pair.get(1)));
+
+                for(int i = 0; i < key.length(); i++)
+                    textWildcardChars.put(key.charAt(i), val);
+            }
+        }
 
         s = new StrView("pattern");
 
@@ -114,6 +184,12 @@ public class FuzzyPattern implements FixedPattern{
         CutoffSearcher searcher = new CutoffSearcher();
         searcher.scoreThreshold(ParsingUtils.toLengthParam(scoreThresholdParam.get(vars)));
         searcher.minOverlap(ParsingUtils.toLengthParam(minOverlapParam.get(vars)), Location.END);
+        searcher.editWeights(editWeights);
+        searcher.wildcardChars(textWildcardChars, patternWildcardChars);
+
+        if(transpositions)
+            searcher.allowTranspositions();
+
         res.add("searcher", searcher);
 
         List<StrView> patterns = new ArrayList<>();
@@ -165,7 +241,8 @@ public class FuzzyPattern implements FixedPattern{
             StrView pattern = reversed ? patterns.get(i).reverse() : patterns.get(i);
             Set<Integer> escapeIdx = patternEscapeIdx.get(i);
 
-            List<FuzzyMatch> matches = searcher.search(text, pattern, false, new HashSet<Integer>(), escapeIdx);
+            List<FuzzyMatch> matches = searcher.search(caseInsensitive ? text.toLowerCase() : text,
+                    caseInsensitive ? pattern.toLowerCase() : pattern, false, new HashSet<Integer>(), escapeIdx);
 
             for(int j = 0; j < matches.size(); j++){
                 PatternMatch curr = new PatternMatch(matches.get(j), patternToIdx.get(i));
@@ -203,7 +280,8 @@ public class FuzzyPattern implements FixedPattern{
             StrView pattern = reversed ? patterns.get(i).reverse() : patterns.get(i);
             Set<Integer> escapeIdx = patternEscapeIdx.get(i);
 
-            List<FuzzyMatch> matches = searcher.search(text, pattern, false, new HashSet<Integer>(), escapeIdx);
+            List<FuzzyMatch> matches = searcher.search(caseInsensitive ? text.toLowerCase() : text,
+                    caseInsensitive ? pattern.toLowerCase() : pattern, false, new HashSet<Integer>(), escapeIdx);
 
             for(int j = matches.size() - 1; j >= 0; j--){
                 PatternMatch m = new PatternMatch(matches.get(j), patternToIdx.get(i));
