@@ -69,7 +69,7 @@ The tool allows multiple input files and multiple template files, where each tem
 ```
 The template file contains 4 lines, each corresponding to a line in a read. It represents how each read should be partitioned by specifying patterns that should match a corresponding location in the read. If the input file contains more that four lines, then the template file will be repeatedly applied for every four lines in the input file.
 
-There are three types of patterns that serve as building blocks in the template file, with each occurrance and their parameters enclosed in `{}`s. The `r` type and the `i` type represents a repeating, fixed length pattern and a repeating, interval length pattern, respectively. Their patterns are unordered sets of characters, and they match contiguous sequences of characters in the text that only contain characters in the set. The pattern can be omitted to match any character. Also, `i` type patterns can match sequences of any length if the length parameter is omitted. `f` type patterns are patterns that require fuzzy searching. In this case, it allows a maximum of 1 edit between the text and the pattern string to count as a match, and the pattern strings are from the `barcodes.txt` file:
+There are three types of patterns that serve as building blocks in the template file, with each occurrance and their parameters enclosed in `{}`s. The `r` type and the `i` type represents a repeating, fixed-length pattern and a repeating, interval-length pattern, respectively. Their patterns are unordered sets of characters, and they match contiguous sequences of characters in the text that only contain characters in the set. The pattern can be omitted to match any character. Also, `i` type patterns can match sequences of any length if the length parameter is omitted. `f` type patterns are patterns that require fuzzy searching. In this case, it allows a maximum of 1 edit between the text and the pattern string to count as a match, and the pattern strings are from the `barcodes.txt` file:
 
 **barcodes.txt**
 ```
@@ -169,4 +169,18 @@ Positional arguments must come before all optional ones!
 - Hyphens in strings that represent a set of characters can be escaped like `--`
 
 ### How it works
+#### Matching all 3 types of patterns
+Each line in the template file is split into the patterns they represent. We will only examine the patterns in one line how they are matched.
 
+First, the pattern is split into contiguous regions of either fuzzy patterns and repeating, fixed-length patterns, or repeating, interval-length patterns. Each of these regions will be handled separately. For simplicity, we will call the fuzzy patterns and repeating, fixed-length patterns the fixed-length region, even though it may not have a constant length.
+
+Then, the algorithm keeps a starting index to track the "done" prefix of the text being searched. At first, the index is at the beginning of the text. To advance the done index, the algorithm goes through each fixed-length region, from left to right, and searches for the entire region in the not-done suffix of the text. Note that the region right before any fixed-length region must be an interval-length region. For every possible match within the edit threshold, the algorithm checks to see if the interval-length region before matches the region of the text after the done portion and before the match of the fixed-length region in the text. The algorithm chooses the first fixed-length match that satisfies all of the constraints to greedily leave space for patterns that may come later, and updates the done index up to the end of the fixed-length match. We choose to not try every possible match configuration, but instead use the gready approach that may result in suboptimal matches due to time-complexity concerns.
+
+##### Searching/matching for the fixed-length region
+`CutoffSearcher` from the searching library is used to match fuzzy patterns. The expected run time complexity is `O(f * k * n)` for each fuzzy pattern, where `f` is the number of fuzzy patterns, `n` is the length of the region of text, and the number of edits, `k` should be small. The match with the lowest number of edits is chosen. Matching fixed-length repeating patterns is trivial, and takes `O(n)` time.
+
+##### Searching/matching for the interval-length region
+We formulate the task of matching many contiguous interval-length patterns as a recurrence, and we solve it in `O(I * n)` time using DP, where `I` is the number of interval-length patterns and `n` is the length of the region of the text. The recurrence, `dp(i, j)`, calculates whether the first `i` characters of the text and the first `j` interval-length patterns match. Whether the whole region of the text and all of the contiguous interval-length patterns match will be `dp(n, I)`.
+```
+
+```
