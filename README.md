@@ -1,16 +1,9 @@
 # Java-Fuzzy-Search
 A fast and flexible Java fuzzy **search** (not match!) library that supports bit parallel algorithms, wildcard characters, different scoring schemes, and other features. The goal is to focus on doing one thing (string search) and have tons of options and optimizations for different use cases.
 
-Also includes a fuzzy search tool that uses a simple language for describing patterns, which is similar to the `grep` Unix command. Since the tool is very general, it can be applied to bioinformatic tasks like demultiplexing DNA sequences and trimming adapters.
+Also includes a [fuzzy search tool](#fuzzyfind-tool), called fuzzyfind, that uses a simple language for describing patterns, similar to the `grep` Unix command. Since the tool is very general, it can be applied to bioinformatic tasks like demultiplexing DNA sequences and trimming adapters.
 
-## Overview of features
-- Very basic exact string search using the KMP algorithm (use Bitap for wildcard characters and other features)
-- Fuzzy string search using the Bitap algorithm (Hamming disance)
-- Fuzzy string search using Myer's bit parallel algorithm (Levenshtein distance + optional transpositions)
-- Fuzzy string search using regular DP + Ukkonen's cutoff heuristic (Levenshtein distance + optional transpositions + different scoring schemes)
-- Stateful DP across multiple patterns + Ukkonen's cutoff heuristic (works well with patterns that share prefixes)
-- Support for wildcard characters with all fuzzy string matching algorithms
-- Support for partial overlaps between the text and the search pattern with fuzzy search algorithms (allows the pattern to hang off the ends of the text)
+## Overview of fuzzy search features
 
 ### Knuth-Morris-Pratt exact string search
 A very standard implementation of the [KMP algorithm](https://en.wikipedia.org/wiki/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm). The runtime complexity is `O(n + m)` for a text of size `n` and a pattern of size `m`.
@@ -45,3 +38,29 @@ Splits each pattern into contiguous, overlapping segments of length `N`, and whe
 
 ### StrView
 `StrView` is the class used to represent strings in the library. It acts as an immutable view on a character array, allowing substring, reverse, and upper/lower case operations to be constant time.
+
+---
+
+## fuzzyfind tool
+This is a general tool for matching multiple fuzzy patterns and other types of patterns that occur in a user-defined format. It was built for preprocessing DNA sequences in `.fastq` format by trimming and demultiplexing, but the tool can be used in other ways due to its flexibility.
+
+### Introduction
+The tool is very simple. It takes template files that describes the patterns for each of the input text files. Matched regions in the text files can be trimmed, and lines that contain those regions can be transfered to different files.
+
+As an example of how the tool functions, let's use a sample `.fastq` file that contains 4 lines, or 1 "read" describing a DNA sequence:
+
+**sample.fastq**
+```
+@sample dummy sequence
+AAATTTCCCCCCCCCC
++
+BBBBBBCCCCCCCCCC
+```
+The 2nd line and the 4th line contain the information that we care about. The 2nd line is the actual DNA sequence, and the last line describes the quality score for each base pair (character) in the 2nd line. Let's say we want to match and trim the barcode (`AAATTT`), while also trimming the corresponding region in the 4th line. In practice, there may be more regions to match and trim, but we will keep it simple.
+
+The tool allows multiple input files and multiple template files, where each template file corresponds to an input file. For the sample `.fastq` file, we will use the following template file:
+
+**template.txt**
+```
+
+```
