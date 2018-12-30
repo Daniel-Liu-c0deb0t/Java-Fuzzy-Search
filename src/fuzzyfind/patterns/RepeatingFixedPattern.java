@@ -106,11 +106,14 @@ public class RepeatingFixedPattern implements FixedPattern{
         if(length > text.length())
             return required ? null : new PatternMatch(text.length() - 1, 0, 0, 0);
 
+        if(acceptableChars == null)
+            return new PatternMatch(text.length() - 1, length, length, 0);
+
         if(reversed)
             text = text.reverse();
 
         for(int i = 0; i < length; i++){
-            if(acceptableChars != null && !acceptableChars.contains(text.charAt(text.length() - 1 - i)))
+            if(!acceptableChars.contains(text.charAt(text.length() - 1 - i)))
                 return required ? null : new PatternMatch(text.length() - 1, 0, 0, 0);
         }
 
