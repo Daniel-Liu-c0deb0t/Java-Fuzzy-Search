@@ -29,10 +29,16 @@ Implementation of [Myer's algorithm](https://pdfs.semanticscholar.org/ec02/dc322
 - Partial overlap between the text and the pattern (only at the end of the text)
 - Allows some wildcard characters to match a set of other characters
 
-### Vanilla DP and Ukkonen's cutoff heuristic
+### Vanilla DP and Ukkonen's cutoff heuristic with the Damerau-Levenshtein distance metric
+Implementation of the classical DP technique to search for a pattern, while allowing insertions, deletions, substitutions, and transpositions. To speed it up, [Ukkonen's cutoff heuristic](https://mycourses.aalto.fi/pluginfile.php/192362/mod_resource/content/2/lecture04.pdf) is used to eliminate diagonals in the DP matrix that exceed the maximum edit distance. The average run time complexity is `O(k * n)` for a text of size `n` and allowing up to `k` edits.
 
+#### Other features
+- Partial overlap between the text and the pattern
+- Allows some wildcard characters to match a set of other characters
+- Custom edit weights for different scoring schemes (some schemes may automatically disable using Ukkonen's cutoff heuristic)
 
-### Stateful DP and Ukkonen's cutoff heuristic
+### Stateful DP and Ukkonen's cutoff heuristic with the Damerau-Levenshtein distance metric
+Same as vanilla DP with Ukkonen's cutoff heuristic, but it is stateful across multiple patterns. The patterns are lexicographically sorted, so patterns with similar prefixes are closer to each other. This allows part of the DP matrix to be kept across multiple patterns, speeding up the search time. It has the same features as the vanilla version, except it is slightly more limited in the amount of options for the partial overlap between the text and the pattern.
 
 ### N-grams
 Splits each pattern into contiguous, overlapping segments of length `N`, and when matching a piece of text, do the same for the text. This allows fast checks for overlaps of length `N` between the pattern and the text. It can be used as a preliminary check before using a more costly searching algorithm. A practical value for `N` is either `N = 3` or `N = 2`.
