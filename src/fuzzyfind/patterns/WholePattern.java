@@ -21,7 +21,7 @@ public class WholePattern{
         this.patternList = patternList;
         this.indexToPattern = new ArrayList<List<Integer>>();
 
-        int idx = 0;
+        int idx = Integer.MIN_VALUE;
 
         for(int i = 0; i < indexList.size(); i++){
             List<Integer> list = indexList.get(i);
@@ -32,7 +32,7 @@ public class WholePattern{
             }
         }
 
-        Collections.sort(indexToPattern, (a, b) -> a.get(0) - b.get(0));
+        Collections.sort(indexToPattern, (a, b) -> Integer.compare(a.get(0), b.get(0)));
     }
 
     public List<List<List<PatternMatch>>> search(List<List<StrView>> texts, Variables vars){
