@@ -52,9 +52,9 @@ As an example of how the tool functions, let's use a sample `.fastq` file that c
 **sample.fastq**
 ```
 @sample dummy sequence
-AAATTTCCCCCCCCCC
+AAATTTCCCCC
 +
-BBBBBBCCCCCCCCCC
+BBBBBBCCCCC
 ```
 The 2nd line and the 4th line contain the information that we care about. The 2nd line is the actual DNA sequence, and the last line describes the quality score for each base pair (character) in the 2nd line. Let's say we want to match and trim the barcode (`AAATTT`), while also trimming the corresponding region in the 4th line. In practice, there may be more regions to match and trim, but we will keep it simple.
 
@@ -62,5 +62,37 @@ The tool allows multiple input files and multiple template files, where each tem
 
 **template.txt**
 ```
-
+{i}
+{f required, trim, name = "barcode", edits = 1, pattern = f"barcodes.txt"}{i pattern = "ATCG", length = 0-100}
+{i}
+{r trim, length = %barcode.length%}{i}
 ```
+The template file contains 4 lines, each corresponding to a line in a read. It represents how each read should be partitioned by specifying patterns that should match a corresponding location in the read.
+
+There are 3 types of patterns that serve as building blocks in the template file, with each occurrance and their parameters enclosed in `{}`s. The `r` type and the `i` type represents a repeating, fixed length pattern and a repeating, interval length pattern, respectively. Their patterns are unordered sets of characters, and they match contiguous sequences of characters in the text that only contain characters in the set. The pattern can be omitted to match any character. Also, `i` type patterns can match sequences of any length if the length parameter is omitted. `f` type patterns are patterns that require fuzzy searching. In this case, it allows a maximum of 1 edit between the text and the pattern string to count as a match, and the pattern strings are from the `barcodes.txt` file:
+
+**barcodes.txt**
+```
+"barcode_1": "AAATTT"
+"barcode_2": "AAATTTT"
+```
+Each of these barcodes have a name. These names will be used to name the output file. `barcode_1` will eventually be chosen as a matching pattern because it is the best match (lowest number of edits) for the text.
+
+To finally run the tool, we use the following shell command:
+```
+java -jar fuzzyfind.jar \
+sample.fastq \
+--pattern template.txt \
+--matched matched_%barcode.pattern_name%.fastq
+```
+This will produce a file named `matched_barcode_1.fastq`, that contains the following:
+
+**matched_barcode_1.fastq**
+```
+@sample dummy sequence
+CCCCC
++
+CCCCC
+```
+
+#### Variables
