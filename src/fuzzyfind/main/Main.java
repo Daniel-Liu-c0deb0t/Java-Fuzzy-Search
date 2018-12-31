@@ -30,7 +30,7 @@ public class Main{
         boolean gzipInput = false;
         boolean gzipOutput = false;
         int threadCount = 1;
-        int batchSize = 1000;
+        int batchSize = 100;
 
         String s = "--pattern";
 

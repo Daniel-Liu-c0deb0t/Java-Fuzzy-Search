@@ -133,7 +133,7 @@ Positional arguments must come before all optional ones!
 - `--in-gz`: Force the input files to be processed as Gzip files. By default, the tool autodetects the file extension.
 - `--out-gz`: Force the output as Gzip files. By default, the tool autodetects the file extension.
 - `--threads`: Number of threads. By default, only one thread is used.
-- `--batch-size`: How many sets of lines to batch for each thread. Defaults to 1000.
+- `--batch-size`: How many sets of lines to batch for each thread. Defaults to 100.
 
 #### Pattern types and their parameters
 **f**
@@ -166,9 +166,12 @@ Positional arguments must come before all optional ones!
 #### Note
 - Characters like `"`, newline, tab, etc. can be escaped like `\"`, `\n`, `\t`, etc.
 - Percent signs in strings that accept variables can be escaped like `%%`
-- Hyphens in strings that represent a set of characters can be escaped like `--`
+- Hyphens in strings that represent sets of characters can be escaped like `--`
 
 ### How it works
+#### Parallelizing the algorithm
+Since handling a chunk of the input files that are specified by the template files does not require information from other chunks, the algorithm is a prime candidate for parallelization. The main thread essentially fills up a queue with large batches of input text, and worker threads process the batches in parallel. Each thread outputs the result of a whole batch at once, and synchronizes with other threads to ensure that only one thread is writing to the output files. Empirically, the speed benefit of multi-threading only shows on large input sizes.
+
 #### Matching all 3 types of patterns
 Each line in the template file is split into the patterns they represent. We will only examine the patterns in one line how they are matched.
 
@@ -181,6 +184,23 @@ Then, the algorithm keeps a starting index to track the "done" prefix of the tex
 
 ##### Searching/matching for the interval-length region
 We formulate the task of matching many contiguous interval-length patterns as a recurrence, and we solve it in `O(I * n)` time using DP, where `I` is the number of interval-length patterns and `n` is the length of the region of the text. The recurrence, `dp(i, j)`, calculates whether the first `i` characters of the text and the first `j` interval-length patterns match. Whether the whole region of the text and all of the contiguous interval-length patterns match will be `dp(n, I)`.
-```
 
+For all 0 <= `i` <= `n` and 0 <= `j` <= `I`, the following recurrence holds true:
 ```
+max_i = maximum length of pattern i
+min_i = minimum length of pattern i
+
+dp(0, 0) = true
+
+dp(i, j) = logical or of all dp(k, j - 1)
+    where characters k to i of text are all part of pattern j
+        for k in {(i - max_j) to (i - min_j)}
+```
+Directly realizing this in code using a matrix to cache intermediate recursion values results in a `O(I * n^2)` upper bound for the time complexity. The key insight in improving the time complexity is that the contiguous region in the text that ends at a certain index `i`, where all characters in the region belong to the `j`th pattern, must form a contiguous overlap with the segment `(i - max_j)` to `(i - min_j)` for `dp(i, j)` to possibly be true. `dp(i, j)` will only be true if any of `dp(k, j - 1)` is true, for every index `k` in the overlapping region.
+
+A prefix sum array of length `n` for each of the `I` patterns can be used to quickly query ranges in the `dp` matrix for whether it contains at least one true value. We can also keep an array of length `I`, which holds the lengths of the longest contiguous substring of text that ends at a certain index and the substring's characters are included by a certain pattern. The recursion can then be expressed as the following:
+```
+dp(0, 0) = true
+pre = 
+```
+To read out the corresponding segments of text where each pattern matched, jump pointers can be kept to back trace through the DP matrix.
