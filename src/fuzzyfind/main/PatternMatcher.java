@@ -200,11 +200,22 @@ public class PatternMatcher{
         @Override
         public void run(){
             try{
+                List<Variables> batchVars = new ArrayList<>();
+                List<List<List<List<PatternMatch>>>> batchMatches = new ArrayList<>();
+
                 for(List<List<StrView>> texts : batchTexts){
                     Variables vars = new Variables();
                     List<List<List<PatternMatch>>> matches = patterns.search(texts, vars);
+                    batchVars.add(vars);
+                    batchMatches.add(matches);
+                }
 
-                    synchronized(writeLock){
+                synchronized(writeLock){
+                    for(int batchIdx = 0; batchIdx < batchTexts.size(); batchIdx++){
+                        List<List<StrView>> texts = batchTexts.get(batchIdx);
+                        Variables vars = batchVars.get(batchIdx);
+                        List<List<List<PatternMatch>>> matches = batchMatches.get(batchIdx);
+
                         if(matches == null){
                             for(int i = 0; i < unmatchedWriters.size(); i++){
                                 BufferedWriter w = unmatchedWriters.get(i);
