@@ -9,7 +9,7 @@ Also includes a [fuzzy search tool](#fuzzyfind-tool), called fuzzyfind, that use
 A very standard implementation of the [KMP algorithm](https://en.wikipedia.org/wiki/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm). The runtime complexity is `O(n + m)` for a text of size `n` and a pattern of size `m`.
 
 ### Bitap fuzzy string search with the Hamming distance metric
-Implementation of the [Bitap algorithm](https://www.cs.helsinki.fi/u/tpkarkka/opetus/11s/spa/lecture04.pdf) for searching for matches that may contain substitutions between the pattern and the text. The runtime complexity is `O(n * (m / w))` for a text of size `n`, a pattern of size `m`, and a word size of `w`. It takes advantage of bit operations on short bit sets having essentially constant time. We use a Java `long` that is 63 bits (not using sign bit) as one word, and we partition the pattern into many chunks (words) for faster searching.
+Implementation of the [Bitap algorithm](https://www.cs.helsinki.fi/u/tpkarkka/opetus/11s/spa/lecture04.pdf) for searching for matches that may contain substitutions between the pattern and the text. The runtime complexity is `O(k * n * (m / w))` for a text of size `n`, a pattern of size `m`, a word size of `w`, and `k` edits allowed (should be small). It takes advantage of bit operations on short bit sets having essentially constant time. We use a Java `long` that is 63 bits (not using sign bit) as one word, and we partition the pattern into many chunks (words) for faster searching.
 
 #### Other features
 - Partial overlap between the text and the pattern
@@ -185,22 +185,38 @@ Then, the algorithm keeps a starting index to track the "done" prefix of the tex
 ##### Searching/matching for the interval-length region
 We formulate the task of matching many contiguous interval-length patterns as a recurrence, and we solve it in `O(I * n)` time using DP, where `I` is the number of interval-length patterns and `n` is the length of the region of the text. The recurrence, `dp(i, j)`, calculates whether the first `i` characters of the text and the first `j` interval-length patterns match. Whether the whole region of the text and all of the contiguous interval-length patterns match will be `dp(n, I)`.
 
-For all 0 <= `i` <= `n` and 0 <= `j` <= `I`, the following recurrence holds true:
+For all `0 <= i <= n` and `0 <= j <= I`, the following recurrence holds true:
 ```
-max_i = maximum length of pattern i
-min_i = minimum length of pattern i
+max_j = maximum length of pattern j
+min_j = minimum length of pattern j
 
 dp(0, 0) = true
 
 dp(i, j) = logical or of all dp(k, j - 1)
-    where characters k to i of text are all part of pattern j
+    where characters (k + 1) to i of text are all part of pattern j
         for k in {(i - max_j) to (i - min_j)}
 ```
-Directly realizing this in code using a matrix to cache intermediate recursion values results in a `O(I * n^2)` upper bound for the time complexity. The key insight in improving the time complexity is that the contiguous region in the text that ends at a certain index `i`, where all characters in the region belong to the `j`th pattern, must form a contiguous overlap with the segment `(i - max_j)` to `(i - min_j)` for `dp(i, j)` to possibly be true. `dp(i, j)` will only be true if any of `dp(k, j - 1)` is true, for every index `k` in the overlapping region.
+Directly realizing this in code using a matrix to cache intermediate recursion values results in a `O(I * n^2)` upper bound for the time complexity. The key insight in improving the time complexity is that the contiguous region in the text that ends at a certain index `i`, where all characters in the region belong to the `j`th pattern, must form a contiguous overlap with the segment `i - max_j` to `i - min_j`, for `dp(i, j)` to possibly be true. This allows us to get rid of the innermost loop.
 
-A prefix sum array of length `n` for each of the `I` patterns can be used to quickly query ranges in the `dp` matrix for whether it contains at least one true value. We can also keep an array of length `I`, which holds the lengths of the longest contiguous substring of text that ends at a certain index and the substring's characters are included by a certain pattern. The recursion can then be expressed as the following:
+A prefix sum array of length `n` for each of the `I` patterns can be used to quickly query ranges in the `dp` matrix for whether it contains at least one true value. We define the prefix sum matrix as `pre(i, j)`, for `0 <= i <= n` and `0 <= j <= I`. We can also keep a matrix that holds the length of the longest contiguous substring of text that ends at an index, where all of that substring's characters are included by a certain pattern. The recursion can then be expressed as the following:
 ```
 dp(0, 0) = true
-pre = 
+longest(0, i) = 0
+    for i in {0 to I}
+pre(i, 0) = 1
+    for i in {0 to n}
+
+longest(i, j) = longest(i - 1, j) + 1
+    if character i of text is part of pattern j
+    else 0
+
+dp(i, j) = (pre(i - min_j, j - 1) - pre(maximum(i - max_j, i - longest(i, j)) - 1, j - 1)) > 0
+pre(i, j) = pre(i - 1, j) + dp(i, j)
 ```
 To read out the corresponding segments of text where each pattern matched, jump pointers can be kept to back trace through the DP matrix.
+
+It is easy to see why this recurrence is correct by induction.
+
+The base case, `dp(0, 0) = true`, is correct because an empty text must match an empty list of patterns.
+
+For a prefix of text up to index `i` and a prefix of an array of patterns up to index `j`, the last pattern must cover some suffix of the prefix of text. Furthermore, the segment it covers must have a length between `min_j` and `max_j`. That implies that the the requirements for `dp(i, j)` to be true must be that pattern `j - 1`, the second to last pattern has to end somewhere between `i - max_j` and `i - min_j`, and it must match, ie. `dp(k, j - 1)` is true for some ending index `k` of the second to last pattern. Also, pattern `j` must contain all of the characters in the substring from `k + 1` to `i` in the text. Those are the only requirements for `dp(i, j)` to be true. By plugging in `n` for `i` and `I` for `j`,  we get `dp(n, I)`, which is whether the whole text matches the all of the pattern.
