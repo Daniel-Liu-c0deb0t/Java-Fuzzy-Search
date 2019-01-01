@@ -1,11 +1,11 @@
 package tests;
 
-import fuzzyfind.patterns.WholePattern;
-import fuzzyfind.patterns.FuzzyPattern;
-import fuzzyfind.patterns.RepeatingFixedPattern;
-import fuzzyfind.patterns.RepeatingIntervalPattern;
-import fuzzyfind.patterns.Pattern;
-import fuzzyfind.utils.PatternMatch;
+import fuzzysplit.patterns.WholePattern;
+import fuzzysplit.patterns.FuzzyPattern;
+import fuzzysplit.patterns.RepeatingFixedPattern;
+import fuzzysplit.patterns.RepeatingIntervalPattern;
+import fuzzysplit.patterns.Pattern;
+import fuzzysplit.utils.PatternMatch;
 
 import javafuzzysearch.utils.StrView;
 
@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
-public class FuzzyFindTest{
+public class FuzzySplitTest{
     public static void main(String[] args){
         Map<StrView, StrView> m = new HashMap<>();
         m.put(new StrView("edits"), new StrView("1"));

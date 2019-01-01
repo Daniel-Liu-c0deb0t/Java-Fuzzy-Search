@@ -1,7 +1,7 @@
 # Java-Fuzzy-Search
 A fast and flexible Java fuzzy **search** (not match!) library that supports bit parallel algorithms, wildcard characters, different scoring schemes, and other features. The goal is to focus on doing one thing (string search) and have tons of options and optimizations for different use cases.
 
-Also includes a [fuzzy search tool](#fuzzyfind-tool), called fuzzyfind, that uses a simple language for describing patterns, similar to the `grep` Unix command. Since the tool is very general, it can be applied to bioinformatic tasks like demultiplexing DNA sequences and trimming adapters.
+Also includes a [fuzzy search tool](#fuzzysplit-tool), called fuzzysplit, that uses a simple language for describing patterns, similar to the `grep` Unix command. Since the tool is very general, it can be applied to bioinformatic tasks like demultiplexing DNA sequences and trimming adapters.
 
 ## Overview of fuzzy search features
 
@@ -41,7 +41,7 @@ Splits each pattern into contiguous, overlapping segments of length `N`, and whe
 
 ---
 
-## fuzzyfind tool
+## fuzzysplit tool
 This is a general tool for matching multiple fuzzy patterns and other types of patterns that occur in a user-defined format. It was built for preprocessing DNA sequences in `.fastq` format by trimming and demultiplexing, but the tool can be used in other ways due to its flexibility.
 
 ### Introduction
@@ -80,7 +80,7 @@ Each of these barcodes have a name. These names will be used to name the output 
 
 To finally run the tool, we use the following shell command:
 ```
-java -jar fuzzyfind.jar \
+java -jar fuzzysplit.jar \
 sample.fastq \
 --pattern template.txt \
 --matched matched_%barcode.pattern_name%.fastq
@@ -96,7 +96,7 @@ CCCCC
 ```
 
 #### Variables
-fuzzyfind makes extensive use of variables that are generated while matching. They allow match data, such as the length of the match, the pattern matched when fuzzy searching, and the name of the pattern matched when fuzzy searching to be referenced in parameters of other patterns. In the example above, we use a variable reference to sync the barcode's match length and the length of the pattern that matches any character in the 4th line. They are both trimmed due to the `trim` parameter.
+fuzzysplit makes extensive use of variables that are generated while matching. They allow match data, such as the length of the match, the pattern matched when fuzzy searching, and the name of the pattern matched when fuzzy searching to be referenced in parameters of other patterns. In the example above, we use a variable reference to sync the barcode's match length and the length of the pattern that matches any character in the 4th line. They are both trimmed due to the `trim` parameter.
 
 Variables created in one pattern file can be referenced in other files. The command for running the tool can also reference variables that were created while matching the template files. This may cause some patterns to require other patterns to be matched first. By default, each template file is matched from the first to the last line. The template files are handled in the order they are specified in the command that runs the tool. To match lines out of order, place a non-negative integer before that line in the template file. Lines that are not numbered are always matched first, and then the numbered lines are matched in increasing order. Note that a pattern within a line cannot reference variables from another pattern in the same line.
 
@@ -170,7 +170,7 @@ Positional arguments must come before all optional ones!
 
 ### How it works
 #### Parallelizing the algorithm
-Since handling a chunk of the input files that are specified by the template files does not require information from other chunks, the algorithm is a prime candidate for parallelization. The main thread essentially fills up a queue with large batches of input text, and worker threads process the batches in parallel. Each thread outputs the result of a whole batch at once, and synchronizes with other threads to ensure that only one thread is writing to the output files. Empirically, the speed benefit of multi-threading only shows on large input sizes.
+Since matching multiple chunks of input text with the template files can be done independently, the algorithm is a prime candidate for parallelization. The main thread essentially fills up a queue with large batches of input text, and worker threads process the batches in parallel. Each thread outputs the result of a whole batch at once, and synchronizes with other threads to ensure that only one thread is writing to the output files. Empirically, the speed benefit of multi-threading only shows on large input sizes.
 
 #### Matching all 3 types of patterns
 Each line in the template file is split into the patterns they represent. We will only examine the patterns in one line how they are matched.
@@ -213,7 +213,7 @@ longest(i, j) = longest(i - 1, j) + 1
 dp(i, j) = (pre(i - min_j, j - 1) - pre(maximum(i - max_j, i - longest(i, j)) - 1, j - 1)) > 0
 pre(i, j) = pre(i - 1, j) + dp(i, j)
 ```
-To read out the corresponding segments of text where each pattern matched, jump pointers can be kept to back trace through the DP matrix.
+Jump pointers that help back trace through the DP matrix are kept to read out the length of each pattern's match with the text.
 
 It is easy to see why this recurrence is correct by induction.
 
