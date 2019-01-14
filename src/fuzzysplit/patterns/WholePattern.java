@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.Arrays;
 
 import javafuzzysearch.utils.StrView;
+import javafuzzysearch.utils.Array2D;
 
 import fuzzysplit.utils.PatternMatch;
 import fuzzysplit.utils.Variables;
@@ -85,22 +86,32 @@ public class WholePattern{
                 i++;
             }
 
+            // used for interval-length patterns
+            Array2D<Boolean> dp = new Array2D<Boolean>(intervalPatterns.size() + 1);
+            Array2D<Integer> prefix = new Array2D<Integer>(intervalPatterns.size() + 1);
+            Array2D<Integer> prev = new Array2D<Integer>(intervalPatterns.size() + 1);
+            Array2D<Integer> prevTrueLength = new Array2D<Integer>(intervalPatterns.size() + 1);
+            int[] patternLength = new int[intervalPatterns.size()];
+
             if(i >= patterns.size()){
-                List<PatternMatch> repeatingMatches =
-                    searchIntervalPatterns(text, start, text.length() - 1, intervalPatterns, intervalParams);
+                if(!intervalPatterns.isEmpty()){
+                    List<PatternMatch> repeatingMatches =
+                        searchIntervalPatterns(dp, prefix, prev, prevTrueLength, patternLength,
+                                text, start, text.length() - 1, intervalPatterns, intervalParams);
 
-                if(repeatingMatches == null)
-                    return null;
+                    if(repeatingMatches == null)
+                        return null;
 
-                for(int m = 0; m < repeatingMatches.size(); m++){
-                    PatternMatch match = repeatingMatches.get(m);
-                    res.add(match);
+                    for(int m = 0; m < repeatingMatches.size(); m++){
+                        PatternMatch match = repeatingMatches.get(m);
+                        res.add(match);
 
-                    if(emptyOptionalMatchIdx.containsKey(m)){
-                        int val = emptyOptionalMatchIdx.get(m);
+                        if(emptyOptionalMatchIdx.containsKey(m)){
+                            int val = emptyOptionalMatchIdx.get(m);
 
-                        for(int n = 0; n < val; n++)
-                            res.add(new PatternMatch(match.getIndex(), 0, 0, 0, -1));
+                            for(int n = 0; n < val; n++)
+                                res.add(new PatternMatch(match.getIndex(), 0, 0, 0, -1));
+                        }
                     }
                 }
 
@@ -116,14 +127,14 @@ public class WholePattern{
             List<Parameters> paramsSubList = params.subList(i, j);
 
             if(i == 0){
-                List<PatternMatch> matches = searchFixedPatterns(text, start, text.length() - 1, subList, true, paramsSubList);
+                List<PatternMatch> matches = searchFixedPatterns(text, start, text.length() - 1, subList, true, null, 0, paramsSubList);
 
                 if(matches == null)
                     return null;
 
                 res.addAll(matches);
-            }else if(i == patterns.size() - 1){
-                List<PatternMatch> fuzzyMatches = searchFixedPatterns(text, start, text.length() - 1, subList, false, paramsSubList);
+            }else if(j == patterns.size() - 1){
+                List<PatternMatch> fuzzyMatches = searchFixedPatterns(text, start, text.length() - 1, subList, false, null, patterns.size() - 1, paramsSubList);
 
                 if(fuzzyMatches == null)
                     return null;
@@ -132,7 +143,8 @@ public class WholePattern{
                     int endIdx = fuzzyMatches.get(0).getIndex() - fuzzyMatches.get(0).getLength();
 
                     List<PatternMatch> repeatingMatches =
-                        searchIntervalPatterns(text, start, endIdx, intervalPatterns, intervalParams);
+                        searchIntervalPatterns(dp, prefix, prev, prevTrueLength, patternLength,
+                                text, start, endIdx, intervalPatterns, intervalParams);
 
                     if(repeatingMatches == null)
                         return null;
@@ -159,6 +171,7 @@ public class WholePattern{
             }else{
                 StrView s = text.substring(start);
                 boolean foundMatch = false;
+                Map<Integer, Map<Integer, PatternMatch>> matchCache = new HashMap<>();
 
                 outerLoop:
                 for(int k = i; k < j; k++){
@@ -186,14 +199,15 @@ public class WholePattern{
                         List<PatternMatch> repeatingMatches = null;
 
                         if(!intervalPatterns.isEmpty()){
-                            repeatingMatches = searchIntervalPatterns(text, start, startMatch.getIndex() - startMatch.getLength(), intervalPatterns, intervalParams);
+                            repeatingMatches = searchIntervalPatterns(dp, prefix, prev, prevTrueLength, patternLength,
+                                    text, start, startMatch.getIndex() - startMatch.getLength(), intervalPatterns, intervalParams);
 
                             if(repeatingMatches == null)
                                 continue;
                         }
 
                         List<PatternMatch> fuzzyMatches =
-                            searchFixedPatterns(text, startMatch.getIndex() + 1, text.length() - 1, fuzzyList, true, paramList);
+                            searchFixedPatterns(text, startMatch.getIndex() + 1, text.length() - 1, fuzzyList, true, matchCache, k + 1, paramList);
 
                         if(fuzzyMatches == null)
                             continue;
@@ -247,32 +261,32 @@ public class WholePattern{
         return res;
     }
 
-    private List<PatternMatch> searchIntervalPatterns(StrView text, int start, int end, List<Pattern> patterns, List<Parameters> params){
+    private List<PatternMatch> searchIntervalPatterns(Array2D<Boolean> dp, Array2D<Integer> prefix, Array2D<Integer> prev,
+            Array2D<Integer> prevTrueLength, int[] patternLength, StrView text, int start, int end, List<Pattern> patterns, List<Parameters> params){
         text = text.substring(start, end + 1);
 
-        boolean[][] dp = new boolean[text.length() + 1][patterns.size() + 1];
-        int[][] prefix = new int[text.length() + 1][patterns.size() + 1];
-        int[][] prev = new int[text.length() + 1][patterns.size() + 1];
-        int[][] prevTrueLength = new int[text.length() + 1][patterns.size() + 1];
+        if(dp.getLength(0) == 0){
+            // left index = patterns, right index = text
+            // right index is automatically extended
+            dp.set(0, 0, true);
+            prefix.set(0, 0, 1);
+            prev.set(0, 0, -1);
+            prevTrueLength.set(0, 0, 0);
 
-        dp[0][0] = true;
-        prefix[0][0] = 1;
-        prev[0][0] = -1;
+            for(int i = 1; i <= patterns.size(); i++){
+                if(((RepeatingIntervalPattern)patterns.get(i - 1)).getMinLength(params.get(i - 1)) != 0)
+                    break;
 
-        for(int i = 1; i <= patterns.size(); i++){
-            if(((RepeatingIntervalPattern)patterns.get(i - 1)).getMinLength(params.get(i - 1)) != 0)
-                break;
-
-            dp[0][i] = true;
-            prefix[0][i] = 1;
-            prev[0][i] = 0;
+                dp.set(i, 0, true);
+                prefix.set(i, 0, 1);
+                prev.set(i, 0, 0);
+                prevTrueLength.set(i, 0, 0);
+            }
         }
 
-        int[] patternLength = new int[patterns.size()];
-
-        for(int i = 1; i <= text.length(); i++){
-            prefix[i][0] = 1;
-            prevTrueLength[i][0] = i;
+        for(int i = prefix.getLength(0); i <= text.length(); i++){
+            prefix.set(0, i, 1);
+            prevTrueLength.set(0, i, i);
 
             for(int j = 1; j <= patterns.size(); j++){
                 RepeatingIntervalPattern pattern = (RepeatingIntervalPattern)patterns.get(j - 1);
@@ -287,31 +301,31 @@ public class WholePattern{
                 int textLo = Math.max(i - pattern.getMaxLength(param), i - patternLength[j - 1]);
 
                 if(textLo <= textHi){
-                    int sum = prefix[textHi][j - 1];
-                    sum -= textLo == 0 ? 0 : prefix[textLo - 1][j - 1];
-                    dp[i][j] = sum > 0;
+                    int sum = prefix.get(j - 1, textHi);
+                    sum -= textLo == 0 ? 0 : prefix.get(j - 1, textLo - 1);
+                    dp.set(j, i, sum > 0);
 
-                    if(dp[i][j])
-                        prevTrueLength[i][j] = 0;
+                    if(sum > 0)
+                        prevTrueLength.set(j, i, 0);
                     else
-                        prevTrueLength[i][j] = prevTrueLength[i - 1][j] + 1;
+                        prevTrueLength.set(j, i, prevTrueLength.get(j, i - 1) + 1);
 
-                    prev[i][j] = pattern.getMinLength(param) + prevTrueLength[textHi][j - 1];
+                    prev.set(j, i, pattern.getMinLength(param) + prevTrueLength.get(j - 1, textHi));
                 }
 
-                prefix[i][j] = prefix[i - 1][j] + (dp[i][j] ? 1 : 0);
+                prefix.set(j, i, prefix.get(j, i - 1) + (dp.get(j, i) ? 1 : 0));
             }
         }
 
         List<PatternMatch> matches = null;
 
-        if(dp[text.length()][patterns.size()]){
+        if(dp.get(patterns.size(), text.length())){
             matches = new ArrayList<PatternMatch>();
             int x = text.length(), y = patterns.size();
 
-            while(prev[x][y] > -1){
-                matches.add(new PatternMatch(start + x - 1, prev[x][y], prev[x][y], 0, -1));
-                x -= prev[x][y];
+            while(prev.get(y, x) > -1){
+                matches.add(new PatternMatch(start + x - 1, prev.get(y, x), prev.get(y, x), 0, -1));
+                x -= prev.get(y, x);
                 y -= 1;
             }
         }
@@ -319,13 +333,14 @@ public class WholePattern{
         return matches;
     }
 
-    private List<PatternMatch> searchFixedPatterns(StrView text, int start, int end, List<Pattern> patterns, boolean reversed, List<Parameters> params){
+    private List<PatternMatch> searchFixedPatterns(StrView text, int start, int end, List<Pattern> patterns, boolean reversed, Map<Integer, Map<Integer, PatternMatch>> cache, int patternOffset, List<Parameters> params){
         List<PatternMatch> matches = new ArrayList<>();
         int idx = reversed ? start : end;
 
         for(int i = 0; i < patterns.size(); i++){
-            FixedPattern pattern = (FixedPattern)patterns.get(reversed ? i : (patterns.size() - 1 - i));
-            Parameters param = params.get(reversed ? i : (params.size() - 1 - i));
+            int curr = reversed ? i : (patterns.size() - 1 - i);
+            FixedPattern pattern = (FixedPattern)patterns.get(curr);
+            Parameters param = params.get(curr);
             StrView s;
 
             if(reversed)
@@ -333,18 +348,31 @@ public class WholePattern{
             else
                 s = text.substring(start, idx + 1);
 
-            PatternMatch match = pattern.matchBest(s, reversed, param);
+            PatternMatch match;
 
-            if(match == null){
-                return null;
+            if(cache == null){
+                match = pattern.matchBest(s, reversed, param);
             }else{
-                if(reversed){
-                    match.setIndex(idx + match.getLength() - 1);
-                    idx += match.getLength();
-                }else{
-                    match.setIndex(idx);
-                    idx -= match.getLength();
-                }
+                if(cache.containsKey(idx) && cache.get(idx).containsKey(curr + patternOffset))
+                    match = cache.get(idx).get(curr + patternOffset);
+                else
+                    match = pattern.matchBest(s, reversed, param);
+
+                if(!cache.containsKey(idx))
+                    cache.put(idx, new HashMap<Integer, PatternMatch>());
+
+                cache.get(idx).put(curr + patternOffset, match);
+            }
+
+            if(match == null)
+                return null;
+
+            if(reversed){
+                match.setIndex(idx + match.getLength() - 1);
+                idx += match.getLength();
+            }else{
+                match.setIndex(idx);
+                idx -= match.getLength();
             }
 
             matches.add(match);
