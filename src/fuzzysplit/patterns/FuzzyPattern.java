@@ -2,11 +2,11 @@ package fuzzysplit.patterns;
 
 import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.Location;
-import javafuzzysearch.searchers.CutoffSearcher;
+import javafuzzysearch.searchers.MyersSearcher;
+import javafuzzysearch.searchers.BitapSearcher;
 import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.LengthParam;
 import javafuzzysearch.utils.Utils;
-import javafuzzysearch.utils.EditWeights;
 
 import fuzzysplit.parameters.FloatParameter;
 import fuzzysplit.parameters.StrParameter;
@@ -28,9 +28,8 @@ public class FuzzyPattern implements FixedPattern{
     private FloatParameter scoreThresholdParam;
     private FloatParameter minOverlapParam;
     private List<StrParameter> patternsParam;
-    private List<Set<Integer>> patternEscapeIdx;
     private boolean required, trim, transpositions, caseInsensitive;
-    private EditWeights editWeights;
+    private boolean hamming;
     private StrView name;
     private StrParameter selector;
     private Map<StrView, List<Integer>> patternNames;
@@ -63,9 +62,7 @@ public class FuzzyPattern implements FixedPattern{
         s = new StrView("hamming");
 
         if(params.containsKey(s))
-            editWeights = new EditWeights().setDefault(0, 1, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
-        else
-            editWeights = new EditWeights();
+            hamming = true;
 
         s = new StrView("name");
 
@@ -140,7 +137,6 @@ public class FuzzyPattern implements FixedPattern{
 
         if(params.containsKey(s)){
             patternsParam = new ArrayList<StrParameter>();
-            patternEscapeIdx = new ArrayList<Set<Integer>>();
             patternNames = new HashMap<StrView, List<Integer>>();
             patternNameList = new ArrayList<StrView>();
 
@@ -166,8 +162,6 @@ public class FuzzyPattern implements FixedPattern{
                 }else{
                     patternNameList.add(new StrView(""));
                 }
-
-                patternEscapeIdx.add(new HashSet<Integer>());
             }
 
             requiredParams--;
@@ -181,16 +175,24 @@ public class FuzzyPattern implements FixedPattern{
     public Parameters updateParams(Variables vars){
         Parameters res = new Parameters();
 
-        CutoffSearcher searcher = new CutoffSearcher();
-        searcher.scoreThreshold(ParsingUtils.toLengthParam(scoreThresholdParam.get(vars)));
-        searcher.minOverlap(ParsingUtils.toLengthParam(minOverlapParam.get(vars)), Location.END);
-        searcher.editWeights(editWeights);
-        searcher.wildcardChars(textWildcardChars, patternWildcardChars);
+        if(hamming){
+            BitapSearcher searcher = new BitapSearcher();
+            searcher.maxEdits(ParsingUtils.toLengthParam(scoreThresholdParam.get(vars)));
+            searcher.minOverlap(ParsingUtils.toLengthParam(minOverlapParam.get(vars)), Location.END);
+            searcher.wildcardChars(textWildcardChars, patternWildcardChars);
 
-        if(transpositions)
-            searcher.allowTranspositions();
+            res.add("searcher", searcher);
+        }else{
+            MyersSearcher searcher = new MyersSearcher();
+            searcher.maxEdits(ParsingUtils.toLengthParam(scoreThresholdParam.get(vars)));
+            searcher.minOverlap(ParsingUtils.toLengthParam(minOverlapParam.get(vars)));
+            searcher.wildcardChars(textWildcardChars, patternWildcardChars);
 
-        res.add("searcher", searcher);
+            if(transpositions)
+                searcher.allowTranspositions();
+
+            res.add("searcher", searcher);
+        }
 
         List<StrView> patterns = new ArrayList<>();
         List<Integer> patternToIdx = new ArrayList<>();
@@ -228,7 +230,14 @@ public class FuzzyPattern implements FixedPattern{
 
     @Override
     public List<PatternMatch> searchAll(StrView text, boolean reversed, Parameters params){
-        CutoffSearcher searcher = params.getSearcher("searcher");
+        BitapSearcher hammingSearcher = null;
+        MyersSearcher levenshteinSearcher = null;
+
+        if(hamming)
+            hammingSearcher = params.getHammingSearcher("searcher");
+        else
+            levenshteinSearcher = params.getLevenshteinSearcher("searcher");
+
         List<StrView> patterns = params.getStrList("patterns");
         List<Integer> patternToIdx = params.getIntList("patternToIdx");
 
@@ -239,10 +248,16 @@ public class FuzzyPattern implements FixedPattern{
 
         for(int i = 0; i < patterns.size(); i++){
             StrView pattern = reversed ? patterns.get(i).reverse() : patterns.get(i);
-            Set<Integer> escapeIdx = patternEscapeIdx.get(i);
 
-            List<FuzzyMatch> matches = searcher.search(caseInsensitive ? text.toLowerCase() : text,
-                    caseInsensitive ? pattern.toLowerCase() : pattern, false, new HashSet<Integer>(), escapeIdx);
+            List<FuzzyMatch> matches = null;
+
+            if(hamming){
+                matches = hammingSearcher.search(
+                        caseInsensitive ? text.toLowerCase() : text, caseInsensitive ? pattern.toLowerCase() : pattern);
+            }else{
+                matches = levenshteinSearcher.search(
+                        caseInsensitive ? text.toLowerCase() : text, caseInsensitive ? pattern.toLowerCase() : pattern);
+            }
 
             for(int j = 0; j < matches.size(); j++){
                 PatternMatch curr = new PatternMatch(matches.get(j), patternToIdx.get(i));
@@ -266,7 +281,14 @@ public class FuzzyPattern implements FixedPattern{
 
     @Override
     public PatternMatch matchBest(StrView text, boolean reversed, Parameters params){
-        CutoffSearcher searcher = params.getSearcher("searcher");
+        BitapSearcher hammingSearcher = null;
+        MyersSearcher levenshteinSearcher = null;
+
+        if(hamming)
+            hammingSearcher = params.getHammingSearcher("searcher");
+        else
+            levenshteinSearcher = params.getLevenshteinSearcher("searcher");
+
         List<StrView> patterns = params.getStrList("patterns");
         List<Integer> patternToIdx = params.getIntList("patternToIdx");
 
@@ -278,10 +300,16 @@ public class FuzzyPattern implements FixedPattern{
 
         for(int i = 0; i < patterns.size(); i++){
             StrView pattern = reversed ? patterns.get(i).reverse() : patterns.get(i);
-            Set<Integer> escapeIdx = patternEscapeIdx.get(i);
 
-            List<FuzzyMatch> matches = searcher.search(caseInsensitive ? text.toLowerCase() : text,
-                    caseInsensitive ? pattern.toLowerCase() : pattern, false, new HashSet<Integer>(), escapeIdx);
+            List<FuzzyMatch> matches = null;
+
+            if(hamming){
+                matches = hammingSearcher.search(
+                        caseInsensitive ? text.toLowerCase() : text, caseInsensitive ? pattern.toLowerCase() : pattern);
+            }else{
+                matches = levenshteinSearcher.search(
+                        caseInsensitive ? text.toLowerCase() : text, caseInsensitive ? pattern.toLowerCase() : pattern);
+            }
 
             for(int j = matches.size() - 1; j >= 0; j--){
                 PatternMatch m = new PatternMatch(matches.get(j), patternToIdx.get(i));

@@ -7,7 +7,8 @@ import java.util.ArrayList;
 
 import javafuzzysearch.utils.StrView;
 
-import javafuzzysearch.searchers.CutoffSearcher;
+import javafuzzysearch.searchers.BitapSearcher;
+import javafuzzysearch.searchers.MyersSearcher;
 
 public class Parameters{
     private Map<String, Object> params;
@@ -32,8 +33,12 @@ public class Parameters{
         return ((Float)params.get(key)).floatValue();
     }
 
-    public CutoffSearcher getSearcher(String key){
-        return (CutoffSearcher)params.get(key);
+    public BitapSearcher getHammingSearcher(String key){
+        return (BitapSearcher)params.get(key);
+    }
+
+    public MyersSearcher getLevenshteinSearcher(String key){
+        return (MyersSearcher)params.get(key);
     }
 
     @SuppressWarnings("unchecked")
