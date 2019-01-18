@@ -4,6 +4,8 @@ import javafuzzysearch.utils.LengthParam;
 import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.Utils;
 
+import fuzzysplit.main.Main;
+
 import fuzzysplit.references.Reference;
 import fuzzysplit.references.StrReference;
 import fuzzysplit.references.VarReference;
@@ -67,7 +69,7 @@ public class ParsingUtils{
             try{
                 data = new String(Files.readAllBytes(Paths.get(path)));
             }catch(Exception e){
-                e.printStackTrace();
+                Main.defaultExceptionHandler(Thread.currentThread(), e);
             }
 
             return new StrView(data);

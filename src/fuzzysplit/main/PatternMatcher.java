@@ -31,46 +31,42 @@ public class PatternMatcher{
     private WholePattern patterns;
     private List<List<List<Pattern>>> patternList;
 
-    public PatternMatcher(List<String> paths){
-        try{
-            patternList = new ArrayList<>();
-            List<List<Integer>> idxList = new ArrayList<>();
+    public PatternMatcher(List<String> paths) throws Exception{
+        patternList = new ArrayList<>();
+        List<List<Integer>> idxList = new ArrayList<>();
 
-            for(String path : paths){
-                List<List<Pattern>> currPatternList = new ArrayList<>();
-                List<Integer> currIdxList = new ArrayList<>();
-                BufferedReader r = Files.newBufferedReader(Paths.get(path));
+        for(String path : paths){
+            List<List<Pattern>> currPatternList = new ArrayList<>();
+            List<Integer> currIdxList = new ArrayList<>();
+            BufferedReader r = Files.newBufferedReader(Paths.get(path));
 
-                String line;
+            String line;
 
-                while((line = r.readLine()) != null){
-                    line = line.trim();
+            while((line = r.readLine()) != null){
+                line = line.trim();
 
-                    if(line.isEmpty() || line.startsWith("#"))
-                        continue;
+                if(line.isEmpty() || line.startsWith("#"))
+                    continue;
 
-                    int startIdx = line.indexOf('{');
+                int startIdx = line.indexOf('{');
 
-                    if(startIdx == -1)
-                        startIdx = line.length();
+                if(startIdx == -1)
+                    startIdx = line.length();
 
-                    Integer idx = startIdx == 0 ? null : Integer.parseInt(line.substring(0, startIdx).trim());
-                    line = line.substring(startIdx);
+                Integer idx = startIdx == 0 ? null : Integer.parseInt(line.substring(0, startIdx).trim());
+                line = line.substring(startIdx);
 
-                    currPatternList.add(ParsingUtils.parsePatterns(ParsingUtils.removeWhitespace(new StrView(line))));
-                    currIdxList.add(idx);
-                }
-
-                patternList.add(currPatternList);
-                idxList.add(currIdxList);
-
-                r.close();
+                currPatternList.add(ParsingUtils.parsePatterns(ParsingUtils.removeWhitespace(new StrView(line))));
+                currIdxList.add(idx);
             }
 
-            patterns = new WholePattern(patternList, idxList);
-        }catch(Exception e){
-            e.printStackTrace();
+            patternList.add(currPatternList);
+            idxList.add(currIdxList);
+
+            r.close();
         }
+
+        patterns = new WholePattern(patternList, idxList);
     }
 
     private boolean gzipOutput;
@@ -81,80 +77,76 @@ public class PatternMatcher{
     private Semaphore semaphore;
     private Object writeLock;
 
-    public void match(List<String> inputPaths, boolean gzipInput, List<String> matchedOutputPaths, List<String> unmatchedOutputPaths, boolean gzipOutput, Character delimiter, int threadCount, int batchSize){
+    public void match(List<String> inputPaths, boolean gzipInput, List<String> matchedOutputPaths, List<String> unmatchedOutputPaths, boolean gzipOutput, Character delimiter, int threadCount, int batchSize) throws Exception{
         this.gzipOutput = gzipOutput;
         this.delimiter = delimiter;
 
-        try{
-            List<BufferedReader> inputReaders = new ArrayList<>();
-            matchedOutputParams = new ArrayList<StrParameter>();
-            unmatchedWriters = new ArrayList<BufferedWriter>();
-            cachedWriters = new HashMap<StrView, BufferedWriter>();
+        List<BufferedReader> inputReaders = new ArrayList<>();
+        matchedOutputParams = new ArrayList<StrParameter>();
+        unmatchedWriters = new ArrayList<BufferedWriter>();
+        cachedWriters = new HashMap<StrView, BufferedWriter>();
 
-            for(int i = 0; i < inputPaths.size(); i++){
-                BufferedReader inputReader = ParsingUtils.getReader(inputPaths.get(i), gzipInput);
-                StrParameter matchedOutputParam = new StrParameter(ParsingUtils.splitByVars(new StrView(matchedOutputPaths.get(i))));
+        for(int i = 0; i < inputPaths.size(); i++){
+            BufferedReader inputReader = ParsingUtils.getReader(inputPaths.get(i), gzipInput);
+            StrParameter matchedOutputParam = new StrParameter(ParsingUtils.splitByVars(new StrView(matchedOutputPaths.get(i))));
 
-                inputReaders.add(inputReader);
-                matchedOutputParams.add(matchedOutputParam);
+            inputReaders.add(inputReader);
+            matchedOutputParams.add(matchedOutputParam);
 
-                if(unmatchedOutputPaths != null){
-                    BufferedWriter unmatchedWriter = ParsingUtils.getWriter(unmatchedOutputPaths.get(i), gzipOutput);
-                    unmatchedWriters.add(unmatchedWriter);
-                }
+            if(unmatchedOutputPaths != null){
+                BufferedWriter unmatchedWriter = ParsingUtils.getWriter(unmatchedOutputPaths.get(i), gzipOutput);
+                unmatchedWriters.add(unmatchedWriter);
             }
+        }
 
-            ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-            semaphore = new Semaphore(threadCount * 2);
-            writeLock = new Object();
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        semaphore = new Semaphore(threadCount * 2);
+        writeLock = new Object();
 
-            while_loop:
-            while(true){
-                semaphore.acquire();
+        while_loop:
+        while(true){
+            semaphore.acquire();
 
-                List<List<List<StrView>>> batchTexts = new ArrayList<>();
+            List<List<List<StrView>>> batchTexts = new ArrayList<>();
 
-                for(int i = 0; i < batchSize; i++){
-                    List<List<StrView>> texts = new ArrayList<>();
+            for(int i = 0; i < batchSize; i++){
+                List<List<StrView>> texts = new ArrayList<>();
 
-                    for(int j = 0; j < inputReaders.size(); j++){
-                        List<StrView> currTexts = ParsingUtils.read(inputReaders.get(j), delimiter, patterns.getLength(j));
+                for(int j = 0; j < inputReaders.size(); j++){
+                    List<StrView> currTexts = ParsingUtils.read(inputReaders.get(j), delimiter, patterns.getLength(j));
 
-                        if(currTexts == null){
-                            if(!batchTexts.isEmpty())
-                                executor.execute(new BatchTask(batchTexts));
+                    if(currTexts == null){
+                        if(!batchTexts.isEmpty())
+                            executor.execute(new BatchTask(batchTexts));
 
-                            break while_loop;
-                        }
-
-                        texts.add(currTexts);
+                        break while_loop;
                     }
 
-                    batchTexts.add(texts);
+                    texts.add(currTexts);
                 }
 
-                executor.execute(new BatchTask(batchTexts));
+                batchTexts.add(texts);
             }
 
-            executor.shutdown();
-            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+            executor.execute(new BatchTask(batchTexts));
+        }
 
-            for(BufferedReader r : inputReaders){
-                if(r != null)
-                    r.close();
-            }
+        executor.shutdown();
+        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
 
-            for(BufferedWriter w : cachedWriters.values()){
-                if(w != null)
-                    w.close();
-            }
+        for(BufferedReader r : inputReaders){
+            if(r != null)
+                r.close();
+        }
 
-            for(BufferedWriter w : unmatchedWriters){
-                if(w != null)
-                    w.close();
-            }
-        }catch(Exception e){
-            e.printStackTrace();
+        for(BufferedWriter w : cachedWriters.values()){
+            if(w != null)
+                w.close();
+        }
+
+        for(BufferedWriter w : unmatchedWriters){
+            if(w != null)
+                w.close();
         }
     }
 
@@ -258,7 +250,7 @@ public class PatternMatcher{
                     }
                 }
             }catch(Exception e){
-                e.printStackTrace();
+                Main.defaultExceptionHandler(Thread.currentThread(), e);
             }finally{
                 semaphore.release();
             }

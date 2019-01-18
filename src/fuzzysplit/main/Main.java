@@ -8,7 +8,11 @@ import java.util.ArrayList;
 import fuzzysplit.utils.ParsingUtils;
 
 public class Main{
-    public static void main(String[] args){
+    public static void main(String[] args) throws Exception{
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            defaultExceptionHandler(t, e);
+        });
+
         Map<String, List<String>> argMap = new HashMap<>();
         String currArg = null;
         argMap.put(null, new ArrayList<String>());
@@ -82,5 +86,10 @@ public class Main{
 
         PatternMatcher patternMatcher = new PatternMatcher(patternPaths);
         patternMatcher.match(inputPaths, gzipInput, matchedOutputPaths, unmatchedOutputPaths, gzipOutput, delimiter, threadCount, batchSize);
+    }
+
+    public static void defaultExceptionHandler(Thread t, Throwable e){
+        e.printStackTrace();
+        System.exit(1);
     }
 }
