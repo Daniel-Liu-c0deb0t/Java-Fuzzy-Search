@@ -1,6 +1,7 @@
 package javafuzzysearch.utils;
 
 public class StrView implements Comparable<StrView>{
+    public static final int HASH_CONST = 31;
     private char[] arr;
     private int start, length;
     private boolean reversed, lowerCase, upperCase;
@@ -153,6 +154,10 @@ public class StrView implements Comparable<StrView>{
         return false;
     }
 
+    public void setHash(int hash){
+        this.hash = hash;
+    }
+
     @Override
     public int hashCode(){
         if(length == 0)
@@ -160,7 +165,7 @@ public class StrView implements Comparable<StrView>{
 
         if(hash == 0){
             for(int i = 0; i < length; i++){
-                hash = hash * 31 + charAt(i);
+                hash = hash * HASH_CONST + charAt(i);
             }
         }
 

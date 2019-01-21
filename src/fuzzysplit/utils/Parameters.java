@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.ArrayList;
 
 import javafuzzysearch.utils.StrView;
+import javafuzzysearch.utils.Ngrams;
+import javafuzzysearch.utils.LengthParam;
 
 import javafuzzysearch.searchers.BitapSearcher;
 import javafuzzysearch.searchers.MyersSearcher;
@@ -31,6 +33,14 @@ public class Parameters{
 
     public float getFloat(String key){
         return ((Float)params.get(key)).floatValue();
+    }
+
+    public LengthParam getLengthParam(String key){
+        return (LengthParam)params.get(key);
+    }
+
+    public Ngrams getNgrams(String key){
+        return (Ngrams)params.get(key);
     }
 
     public BitapSearcher getHammingSearcher(String key){
