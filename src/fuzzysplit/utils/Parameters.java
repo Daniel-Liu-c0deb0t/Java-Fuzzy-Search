@@ -10,7 +10,7 @@ import javafuzzysearch.utils.Ngrams;
 import javafuzzysearch.utils.LengthParam;
 
 import javafuzzysearch.searchers.BitapSearcher;
-import javafuzzysearch.searchers.MyersSearcher;
+import javafuzzysearch.searchers.CutoffSearcher;
 
 public class Parameters{
     private Map<String, Object> params;
@@ -47,8 +47,8 @@ public class Parameters{
         return (BitapSearcher)params.get(key);
     }
 
-    public MyersSearcher getLevenshteinSearcher(String key){
-        return (MyersSearcher)params.get(key);
+    public CutoffSearcher getLevenshteinSearcher(String key){
+        return (CutoffSearcher)params.get(key);
     }
 
     @SuppressWarnings("unchecked")

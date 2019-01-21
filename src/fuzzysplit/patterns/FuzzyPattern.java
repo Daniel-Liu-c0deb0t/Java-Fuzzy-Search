@@ -2,7 +2,7 @@ package fuzzysplit.patterns;
 
 import javafuzzysearch.utils.FuzzyMatch;
 import javafuzzysearch.utils.Location;
-import javafuzzysearch.searchers.MyersSearcher;
+import javafuzzysearch.searchers.CutoffSearcher;
 import javafuzzysearch.searchers.BitapSearcher;
 import javafuzzysearch.utils.StrView;
 import javafuzzysearch.utils.LengthParam;
@@ -197,9 +197,9 @@ public class FuzzyPattern implements FixedPattern{
 
             res.add("searcher", searcher);
         }else{
-            MyersSearcher searcher = new MyersSearcher();
-            searcher.maxEdits(scoreThreshold);
-            searcher.minOverlap(minOverlap);
+            CutoffSearcher searcher = new CutoffSearcher();
+            searcher.scoreThreshold(scoreThreshold);
+            searcher.minOverlap(minOverlap, Location.END);
             searcher.wildcardChars(textWildcardChars, patternWildcardChars);
 
             if(transpositions)
@@ -248,7 +248,7 @@ public class FuzzyPattern implements FixedPattern{
     @Override
     public List<PatternMatch> searchAll(StrView text, boolean reversed, Parameters params){
         BitapSearcher hammingSearcher = null;
-        MyersSearcher levenshteinSearcher = null;
+        CutoffSearcher levenshteinSearcher = null;
 
         if(hamming)
             hammingSearcher = params.getHammingSearcher("searcher");
@@ -298,7 +298,7 @@ public class FuzzyPattern implements FixedPattern{
                         caseInsensitive ? text.toLowerCase() : text, caseInsensitive ? pattern.toLowerCase() : pattern);
             }else{
                 matches = levenshteinSearcher.search(
-                        caseInsensitive ? text.toLowerCase() : text, caseInsensitive ? pattern.toLowerCase() : pattern);
+                        caseInsensitive ? text.toLowerCase() : text, caseInsensitive ? pattern.toLowerCase() : pattern, false);
             }
 
             for(int j = 0; j < matches.size(); j++){
@@ -324,7 +324,7 @@ public class FuzzyPattern implements FixedPattern{
     @Override
     public PatternMatch matchBest(StrView text, boolean reversed, Parameters params){
         BitapSearcher hammingSearcher = null;
-        MyersSearcher levenshteinSearcher = null;
+        CutoffSearcher levenshteinSearcher = null;
 
         if(hamming)
             hammingSearcher = params.getHammingSearcher("searcher");
@@ -384,7 +384,7 @@ public class FuzzyPattern implements FixedPattern{
                         caseInsensitive ? currText.toLowerCase() : currText, caseInsensitive ? pattern.toLowerCase() : pattern);
             }else{
                 matches = levenshteinSearcher.search(
-                        caseInsensitive ? currText.toLowerCase() : currText, caseInsensitive ? pattern.toLowerCase() : pattern);
+                        caseInsensitive ? currText.toLowerCase() : currText, caseInsensitive ? pattern.toLowerCase() : pattern, false);
             }
 
             for(int j = matches.size() - 1; j >= 0; j--){
