@@ -407,7 +407,7 @@ public class FuzzyPattern implements FixedPattern{
     }
 
     private boolean guaranteedNgramMatch(int length, int edits){
-        return length > (ngramSize - 1) * (edits + 1) - edits;
+        return length > (ngramSize - 1) * (edits + 1) + (transpositions ? edits * 2 : edits);
     }
 
     @Override
