@@ -243,7 +243,7 @@ public class FuzzyPattern implements FixedPattern{
 
         if(autoNgramSize){
             for(StrView pattern : patterns){
-                min = Math.min(min, maxNgramSize(minOverlap.get(pattern.length()), editThreshold.get(pattern.length()));
+                min = Math.min(min, maxNgramSize(minOverlap.get(pattern.length()), scoreThreshold.get(pattern.length())));
             }
         }
 
@@ -286,7 +286,7 @@ public class FuzzyPattern implements FixedPattern{
                     int length = patterns.get(i).length();
 
                     if(!idx.contains(i) &&
-                            !guaranteedNgramMatch(minOverlap.get(length), scoreThreshold.get(length)), ngrams.getN()){
+                            !guaranteedNgramMatch(minOverlap.get(length), scoreThreshold.get(length), ngrams.getN())){
                         idx.add(i);
                     }
                 }
@@ -371,7 +371,7 @@ public class FuzzyPattern implements FixedPattern{
                     int length = patterns.get(i).length();
 
                     if(!idx.contains(i) &&
-                            !guaranteedNgramMatch(minOverlap.get(length), scoreThreshold.get(length)), ngrams.getN()){
+                            !guaranteedNgramMatch(minOverlap.get(length), scoreThreshold.get(length), ngrams.getN())){
                         idx.add(i);
                     }
                 }
