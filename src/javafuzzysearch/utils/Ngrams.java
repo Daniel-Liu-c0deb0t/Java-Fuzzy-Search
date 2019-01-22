@@ -26,6 +26,10 @@ public class Ngrams{
             add(strings.get(i), i);
     }
 
+    public int getN(){
+        return n;
+    }
+
     public List<StrView> get(StrView s){
         List<StrView> res = new ArrayList<>();
         BitSet set = getSet(s);

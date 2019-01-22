@@ -29,7 +29,7 @@ public class FuzzyPattern implements FixedPattern{
     private FloatParameter scoreThresholdParam;
     private FloatParameter minOverlapParam;
     private List<StrParameter> patternsParam;
-    private boolean required, trim, transpositions, caseInsensitive, hamming;
+    private boolean required, trim, transpositions, caseInsensitive, hamming, autoNgramSize;
     private int ngramSize;
     private StrView name;
     private StrParameter selector;
@@ -70,7 +70,7 @@ public class FuzzyPattern implements FixedPattern{
         if(params.containsKey(s))
             ngramSize = Integer.parseInt(params.get(s).toString());
         else
-            ngramSize = 3;
+            autoNgramSize = true;
 
         s = new StrView("name");
 
@@ -239,8 +239,16 @@ public class FuzzyPattern implements FixedPattern{
         res.add("patterns", patterns);
         res.add("patternToIdx", patternToIdx);
 
-        if(ngramSize > 0)
-            res.add("ngrams", new Ngrams(patterns, ngramSize));
+        int min = Integer.MAX_VALUE;
+
+        if(autoNgramSize){
+            for(StrView pattern : patterns){
+                min = Math.min(min, maxNgramSize(minOverlap.get(pattern.length()), editThreshold.get(pattern.length()));
+            }
+        }
+
+        if(ngramSize > 0 || (min > 0 && min != Integer.MAX_VALUE))
+            res.add("ngrams", new Ngrams(patterns, ngramSize > 0 ? ngramSize : min));
 
         return res;
     }
@@ -265,22 +273,24 @@ public class FuzzyPattern implements FixedPattern{
 
         Set<Integer> idx;
 
-        if(ngramSize > 0){
-            idx = ngrams.getIdx(text);
-
-            for(int i = 0; i < patterns.size(); i++){
-                int length = patterns.get(i).length();
-
-                if(!idx.contains(i) &&
-                        !guaranteedNgramMatch(minOverlap.get(length), scoreThreshold.get(length))){
-                    idx.add(i);
-                }
-            }
-        }else{
+        if(ngrams == null){
             idx = new HashSet<Integer>();
 
             for(int i = 0; i < patterns.size(); i++)
                 idx.add(i);
+        }else{
+            idx = ngrams.getIdx(text);
+
+            if(!autoNgramSize){
+                for(int i = 0; i < patterns.size(); i++){
+                    int length = patterns.get(i).length();
+
+                    if(!idx.contains(i) &&
+                            !guaranteedNgramMatch(minOverlap.get(length), scoreThreshold.get(length)), ngrams.getN()){
+                        idx.add(i);
+                    }
+                }
+            }
         }
 
         if(reversed)
@@ -341,29 +351,31 @@ public class FuzzyPattern implements FixedPattern{
 
         Set<Integer> idx;
 
-        if(ngramSize > 0){
+        if(ngrams == null){
+            idx = new HashSet<Integer>();
+
+            for(int i = 0; i < patterns.size(); i++)
+                idx.add(i);
+        }else{
             int maxLength = 0;
 
-            for(int i = 0; i < patterns.size(); i++){
-                int length = patterns.get(i).length();
+            for(StrView pattern : patterns){
+                int length = pattern.length();
                 maxLength = Math.max(maxLength, length + scoreThreshold.get(length));
             }
 
             idx = ngrams.getIdx(reversed ? text.substring(0, maxLength) : text.substring(text.length() - maxLength));
 
-            for(int i = 0; i < patterns.size(); i++){
-                int length = patterns.get(i).length();
+            if(!autoNgramSize){
+                for(int i = 0; i < patterns.size(); i++){
+                    int length = patterns.get(i).length();
 
-                if(!idx.contains(i) &&
-                        !guaranteedNgramMatch(minOverlap.get(length), scoreThreshold.get(length))){
-                    idx.add(i);
+                    if(!idx.contains(i) &&
+                            !guaranteedNgramMatch(minOverlap.get(length), scoreThreshold.get(length)), ngrams.getN()){
+                        idx.add(i);
+                    }
                 }
             }
-        }else{
-            idx = new HashSet<Integer>();
-
-            for(int i = 0; i < patterns.size(); i++)
-                idx.add(i);
         }
 
         if(reversed)
@@ -406,8 +418,13 @@ public class FuzzyPattern implements FixedPattern{
         return match;
     }
 
-    private boolean guaranteedNgramMatch(int length, int edits){
-        return length > (ngramSize - 1) * (edits + 1) + (transpositions ? edits * 2 : edits);
+    private boolean guaranteedNgramMatch(int length, int edits, int n){
+        return length > (n - 1) * (edits + 1) + (transpositions ? edits * 2 : edits);
+    }
+
+    private int maxNgramSize(int length, int edits){
+        float res = (length - (transpositions ? edits * 2 : edits)) / (edits + 1.0f) + 1.0f;
+        return (int)Math.ceil(res) - 1;
     }
 
     @Override
