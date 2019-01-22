@@ -6,18 +6,14 @@ from dna_random_gen import rand_edits, rand_str
 random.seed(0)
 
 adapter_length = 30
-enzyme_length = 5
 num_barcodes = 48
-barcode_lengths = list(range(4, 8 + 1))
+barcode_lengths = list(range(8, 16 + 1))
 edits = 1
 length = 100
 num_iter = 1000000
 
 adapter = rand_str(adapter_length)
 print("Adapter: " + adapter, file = sys.stderr)
-
-enzyme = rand_str(enzyme_length)
-print("Enzyme: " + enzyme, file = sys.stderr)
 
 barcodes = []
 
@@ -37,7 +33,6 @@ for i in range(num_iter):
     print("@" + str(i))
 
     dna_barcode = ""
-    dna_enzyme = ""
     dna_adapter = ""
     barcode_idx = None
 
@@ -47,14 +42,11 @@ for i in range(num_iter):
         dna_barcode = rand_edits(dna_barcode, edits)
 
     if random.randint(0, 1) == 0:
-        dna_enzyme = rand_edits(enzyme, edits)
-
-    if random.randint(0, 1) == 0:
         dna_adapter = rand_edits(adapter, edits)
 
-    dna = dna_barcode + dna_enzyme + rand_str(length) + dna_adapter
+    dna = dna_barcode + rand_str(length) + dna_adapter
 
-    if dna_barcode and dna_enzyme and dna_adapter:
+    if dna_barcode and dna_adapter:
         files[barcode_idx].write(str(i) + "\n")
         with_gbs += 1
 
