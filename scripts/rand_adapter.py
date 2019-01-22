@@ -4,6 +4,7 @@ from dna_random_gen import rand_edits, rand_str
 
 random.seed(0)
 
+hamming = False
 adapter_length = 30
 edits = 1
 length = 100
@@ -19,7 +20,7 @@ with open("has_adapter.txt", "w") as f:
         print("@" + str(i))
 
         if random.randint(0, 3) < 3:
-            dna = rand_str(length) + rand_edits(adapter, edits)
+            dna = rand_str(length) + rand_edits(adapter, edits, hamming)
             f.write(str(i) + "\n")
             with_adapter += 1
         else:

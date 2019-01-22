@@ -5,6 +5,7 @@ from dna_random_gen import rand_edits, rand_str
 
 random.seed(0)
 
+hamming = False
 adapter_length = 30
 num_barcodes = 48
 barcode_lengths = list(range(8, 16 + 1))
@@ -39,10 +40,10 @@ for i in range(num_iter):
     if random.randint(0, 1) == 0:
         barcode_idx = random.randint(0, len(barcodes) - 1)
         dna_barcode = barcodes[barcode_idx]
-        dna_barcode = rand_edits(dna_barcode, edits)
+        dna_barcode = rand_edits(dna_barcode, edits, hamming)
 
     if random.randint(0, 1) == 0:
-        dna_adapter = rand_edits(adapter, edits)
+        dna_adapter = rand_edits(adapter, edits, hamming)
 
     dna = dna_barcode + rand_str(length) + dna_adapter
 
