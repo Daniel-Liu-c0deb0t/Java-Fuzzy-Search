@@ -142,7 +142,7 @@ Positional arguments must come before all optional ones!
 - `transpose`: enable transpositions
 - `no_case`: case insensitive
 - `hamming`: use hamming distance
-- `ngram = <number>`: n-gram size, set to 0 to disable using n-grams, by default, trigrams are used
+- `ngram = <number>`: n-gram size, set to 0 to disable using n-grams, by default, the n-gram size is automatically calculated
 - `name = <string>`: name of the pattern, used to reference the match as a variable
 - `edits = <number>`: maximum number of edits allowed
     - real value < 1 = percentage of pattern length, negative value = pattern length - value
@@ -183,12 +183,18 @@ Then, the algorithm keeps a starting index to track the "done" prefix of the tex
 ##### Searching/matching for the fixed-length region
 `CutoffSearcher` from the searching library is used to match fuzzy patterns with the Levenshtein distance metric. The expected run time complexity is `O(f * k * n)` for each fuzzy pattern, where `f` is the number of fuzzy patterns, `n` is the length of the region of text, and the number of edits, `k` should be small. `BitapSearcher` is used to match using the Hamming distance metric. For both methods, the match with the lowest number of edits is chosen. Also, n-grams are used to efficiently eliminate cases that obviously do not match before the other searching algorithm are used.
 
-If the length of the minimum allowable overlap between the text and the pattern is too short, then using n-grams may erronously discard patterns that have edits. Therefore, we impose a threshold for when to use n-grams:
+If the length of the minimum allowable overlap between the text and a pattern is too short, then using n-grams may erronously discard that pattern if it has edits. Therefore, we impose a threshold for when to use n-grams:
 
 ```
 o > (n - 1)(e + 1) + e
 ```
-for a minimum overlap `o`, n-gram size `n`, and maximum number of edits `e`. It is easy to see that if the inequality is satisfied for a pattern, then using n-grams to eliminate patterns will never remove that pattern if it does match with the text within the edit threshold `e`.
+for a minimum overlap `o`, n-gram size `n`, and maximum number of edits `e`. It is easy to see that if the inequality is satisfied for a pattern, then using n-grams to eliminate patterns will never remove that pattern if it does match with the text within the edit threshold `e`. As longer n-gram sizes are better (they may cause more patterns to be eliminated), we solve the inequality above for `n` to find out the largest n-gram size possible:
+
+```
+n < (o - e) / (e + 1) + 1
+```
+
+We use this to automatically find the maximum possible n-gram size across all patterns in a fuzzy pattern.
 
 Matching fixed-length repeating patterns is trivial, and takes `O(n)` time.
 
