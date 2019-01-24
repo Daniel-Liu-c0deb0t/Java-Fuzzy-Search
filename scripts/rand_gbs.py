@@ -6,15 +6,11 @@ from dna_random_gen import rand_edits, rand_str
 random.seed(0)
 
 hamming = False
-adapter_length = 30
 num_barcodes = 48
-barcode_lengths = list(range(8, 16 + 1))
+barcode_lengths = list(range(8, 15 + 1))
 edits = 1
 length = 100
-num_iter = 1000000
-
-adapter = rand_str(adapter_length)
-print("Adapter: " + adapter, file = sys.stderr)
+num_iter = 10000000
 
 barcodes = []
 
@@ -34,7 +30,6 @@ for i in range(num_iter):
     print("@" + str(i))
 
     dna_barcode = ""
-    dna_adapter = ""
     barcode_idx = None
 
     if random.randint(0, 1) == 0:
@@ -42,12 +37,9 @@ for i in range(num_iter):
         dna_barcode = barcodes[barcode_idx]
         dna_barcode = rand_edits(dna_barcode, edits, hamming)
 
-    if random.randint(0, 1) == 0:
-        dna_adapter = rand_edits(adapter, edits, hamming)
+    dna = dna_barcode + rand_str(length)
 
-    dna = dna_barcode + rand_str(length) + dna_adapter
-
-    if dna_barcode and dna_adapter:
+    if dna_barcode:
         files[barcode_idx].write(str(i) + "\n")
         with_gbs += 1
 
@@ -55,4 +47,4 @@ for i in range(num_iter):
     print("+")
     print("A" * len(dna))
 
-print("Reads with GBS: " + str(with_gbs), file = sys.stderr)
+print("Reads with barcode: " + str(with_gbs), file = sys.stderr)
