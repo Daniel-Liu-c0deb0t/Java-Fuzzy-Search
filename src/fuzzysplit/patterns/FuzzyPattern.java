@@ -408,6 +408,9 @@ public class FuzzyPattern implements FixedPattern{
                     if(first || match.getScore() > m.getScore()){
                         match = m;
                         first = false;
+
+                        if(match.getScore() <= 0)
+                            return match;
                     }
 
                     break;
