@@ -412,7 +412,7 @@ public class FuzzyPattern implements FixedPattern{
                         if(match.getScore() <= 0)
                             return match;
                     }
-
+                }else{
                     break;
                 }
             }
