@@ -1,0 +1,4 @@
+{i}
+{f required, trim, name = "b", no_case, edits = 1, pattern = f"barcodes.txt"}{i}
+{i}
+{r required, trim, length = %b.length%}{i}

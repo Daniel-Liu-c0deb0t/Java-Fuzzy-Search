@@ -1,0 +1,4 @@
+{i}
+{i}{f ngram = 10, required, trim, name = "f", no_case, edits = 1, pattern = "\"GGACGGCGCTTCTACTCAACGACGCTGGCA\""}
+{i}
+{i}{r required, trim, length = %f.length%}

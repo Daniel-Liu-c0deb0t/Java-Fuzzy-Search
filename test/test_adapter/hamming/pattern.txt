@@ -1,0 +1,4 @@
+{i}
+{i}{f hamming, required, trim, name = "f", no_case, edits = 1, pattern = "\"GGACGGCGCTTCTACTCAACGACGCTGGCA\""}
+{i}
+{i}{r required, trim, length = %f.length%}

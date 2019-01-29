@@ -1,7 +1,7 @@
 # Java-Fuzzy-Search
 A fast and flexible Java fuzzy **search** (not match!) library that supports bit parallel algorithms, wildcard characters, different scoring schemes, and other features. The goal is to focus on doing one thing (string search) and have tons of options and optimizations for different use cases.
 
-Also includes a [fuzzy search tool](#fuzzysplit-tool), called fuzzysplit, that uses a simple language for describing patterns, similar to the `grep` Unix command. Since the tool is very general, it can be applied to bioinformatic tasks like demultiplexing DNA sequences and trimming adapters.
+Also includes a fuzzy search tool, called [Fuzzysplit](#Fuzzysplit-tool), that uses a simple language for describing patterns, similar to the `grep` Unix command. Since the tool is very general, it can be applied to bioinformatic tasks like demultiplexing DNA sequences and trimming adapters. Download the latest compiled jar file from `test/fuzzysplit.jar`.
 
 ## Overview of fuzzy search features
 
@@ -41,7 +41,7 @@ Splits each pattern into contiguous, overlapping segments of length `N`, and whe
 
 ---
 
-## fuzzysplit tool
+## Fuzzysplit tool
 This is a general tool for matching multiple fuzzy patterns and other types of patterns that occur in a user-defined format. It was built for preprocessing DNA sequences in `.fastq` format by trimming and demultiplexing, but the tool can be used in other ways due to its flexibility.
 
 ### Introduction
@@ -96,7 +96,7 @@ CCCCC
 ```
 
 #### Variables
-fuzzysplit makes extensive use of variables that are generated while matching. They allow match data, such as the length of the match, the pattern matched when fuzzy searching, and the name of the pattern matched when fuzzy searching to be referenced in parameters of other patterns. In the example above, we use a variable reference to sync the barcode's match length and the length of the pattern that matches any character in the 4th line. They are both trimmed due to the `trim` parameter.
+Fuzzysplit makes extensive use of variables that are generated while matching. They allow match data, such as the length of the match, the pattern matched when fuzzy searching, and the name of the pattern matched when fuzzy searching to be referenced in parameters of other patterns. In the example above, we use a variable reference to sync the barcode's match length and the length of the pattern that matches any character in the 4th line. They are both trimmed due to the `trim` parameter.
 
 Variables created in one pattern file can be referenced in other files. The command for running the tool can also reference variables that were created while matching the template files. This may cause some patterns to require other patterns to be matched first. By default, each template file is matched from the first to the last line. The template files are handled in the order they are specified in the command that runs the tool. To match lines out of order, place a non-negative integer before that line in the template file. Lines that are not numbered are always matched first, and then the numbered lines are matched in increasing order. Note that a pattern within a line cannot reference variables from another pattern in the same line.
 
