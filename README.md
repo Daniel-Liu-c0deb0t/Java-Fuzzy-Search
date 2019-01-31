@@ -1,7 +1,7 @@
 # Java-Fuzzy-Search
 A fast and flexible Java fuzzy **search** (not match!) library that supports bit parallel algorithms, wildcard characters, different scoring schemes, and other features. The goal is to focus on doing one thing (string search) and have tons of options and optimizations for different use cases.
 
-Also includes a fuzzy search tool, called [Fuzzysplit](#Fuzzysplit-tool), that uses a simple language for describing patterns, similar to the `grep` Unix command. Since the tool is very general, it can be applied to bioinformatic tasks like demultiplexing DNA sequences and trimming adapters. Download the latest compiled jar file from `test/fuzzysplit.jar`.
+Also includes a fuzzy search tool, called [Fuzzysplit](#Fuzzysplit-tool), that uses a simple language for describing patterns, similar to the `grep` Unix command. Since the tool is very general, it can be applied to bioinformatic tasks like demultiplexing DNA sequences and trimming adapters. Download the latest compiled jar file [here](raw/master/test/fuzzysplit.jar).
 
 ## Overview of fuzzy search features
 
@@ -194,7 +194,7 @@ for a minimum overlap `o`, n-gram size `n`, and maximum number of edits `e`. It 
 n < (o - e) / (e + 1) + 1
 ```
 
-We use this to automatically find the maximum possible n-gram size across all patterns in a fuzzy pattern.
+We use this to automatically find the maximum possible n-gram size across all patterns in a fuzzy pattern. Note that n-grams should be disabled if wildcard characters are used in the subpatterns or in the text.
 
 Matching fixed-length repeating patterns is trivial, and takes `O(n)` time.
 
