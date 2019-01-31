@@ -1,7 +1,7 @@
 # Java-Fuzzy-Search
 A fast and flexible Java fuzzy **search** (not match!) library that supports bit parallel algorithms, wildcard characters, different scoring schemes, and other features. The goal is to focus on doing one thing (string search) and have tons of options and optimizations for different use cases.
 
-Also includes a fuzzy search tool, called [Fuzzysplit](#Fuzzysplit-tool), that uses a simple language for describing patterns, similar to the `grep` Unix command. Since the tool is very general, it can be applied to bioinformatic tasks like demultiplexing DNA sequences and trimming adapters. Download the latest compiled jar file [here](raw/master/test/fuzzysplit.jar).
+Also includes a fuzzy search tool, called [Fuzzysplit](#Fuzzysplit-tool), that uses a simple language for describing patterns, similar to the `grep` Unix command. Since the tool is very general, it can be applied to bioinformatic tasks like demultiplexing DNA sequences and trimming adapters. Download the latest compiled jar file [here](https://github.com/Daniel-Liu-c0deb0t/Java-Fuzzy-Search/raw/master/test/fuzzysplit.jar).
 
 ## Overview of fuzzy search features
 
