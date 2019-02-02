@@ -96,13 +96,31 @@ public class EditWeights{
     }
 
     public boolean isDiagonalMonotonic(){
-        boolean[] signs = new boolean[3];
+        if(mapPair.containsKey(Edit.Type.TRA))
+            return false;
+
+        Map<Character, Integer> sameMap = mapSingle.get(Edit.Type.SAME);
+
+        for(Character c : sameMap.keySet()){
+            if(sameMap.get(c) != 0)
+                return false;
+        }
+
+        Integer edit = null;
 
         for(Edit.Type key : mapSingle.keySet()){
+            if(key == Edit.Type.SAME)
+                continue;
+
             Map<Character, Integer> map = mapSingle.get(key);
 
-            for(Character c : map.keySet())
-                signs[Integer.signum(map.get(c)) + 1] = true;
+            for(Character c : map.keySet()){
+                if(edit == null)
+                    edit = map.get(c);
+
+                if(map.get(c) != edit)
+                    return false;
+            }
         }
 
         for(Edit.Type key : mapPair.keySet()){
@@ -111,11 +129,16 @@ public class EditWeights{
             for(Character a : map.keySet()){
                 Map<Character, Integer> m = map.get(a);
 
-                for(Character b : m.keySet())
-                    signs[Integer.signum(m.get(b)) + 1] = true;
+                for(Character b : m.keySet()){
+                    if(edit == null)
+                        edit = m.get(b);
+
+                    if(m.get(b) != edit)
+                        return false;
+                }
             }
         }
 
-        return !signs[0] || !signs[2];
+        return true;
     }
 }
