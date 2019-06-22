@@ -364,6 +364,8 @@ public class FuzzyPattern implements FixedPattern{
                 maxLength = Math.max(maxLength, length + scoreThreshold.get(length));
             }
 
+            maxLength = Math.min(maxLength, text.length());
+
             idx = ngrams.getIdx(reversed ? text.substring(0, maxLength) : text.substring(text.length() - maxLength));
 
             if(!autoNgramSize){
@@ -386,7 +388,7 @@ public class FuzzyPattern implements FixedPattern{
 
         for(int i : idx){
             StrView pattern = reversed ? patterns.get(i).reverse() : patterns.get(i);
-            int textOffset = text.length() - pattern.length() - scoreThreshold.get(pattern.length());
+            int textOffset = Math.max(0, text.length() - pattern.length() - scoreThreshold.get(pattern.length()));
             StrView currText = text.substring(textOffset);
 
             List<FuzzyMatch> matches = null;
