@@ -3,13 +3,15 @@ A fast and flexible Java fuzzy **search** (not match!) library that supports bit
 
 Also includes a fuzzy search tool, called [**Fuzzysplit**](#Fuzzysplit-tool), that uses a simple language for describing patterns, similar to the `grep` Unix command. Since the tool is very general, it can be applied to bioinformatic tasks like demultiplexing DNA sequences and trimming adapters. Download the latest compiled jar file [here](https://github.com/Daniel-Liu-c0deb0t/Java-Fuzzy-Search/raw/master/test/fuzzysplit.jar). Settings for benchmarks and testing are available in the `test` and `scripts` folders.
 
-The preprint paper for Fuzzysplit can be found [**here**](https://www.biorxiv.org/content/10.1101/534511v1). If you use this code, please cite
+The paper for Fuzzysplit can be found [**here**](https://peerj.com/articles/7170/). If you use this code, please cite
 
 ```
 @article{liu2019fuzzysplit,
   title={Fuzzysplit: demultiplexing and trimming sequenced DNA with a declarative language},
   author={Liu, Daniel},
   journal={PeerJ},
+  volume={7},
+  pages={e7170},
   year={2019},
   publisher={PeerJ Inc.}
 }
